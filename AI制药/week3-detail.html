@@ -1,0 +1,206 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>第3周·详细教程</title>
+<style>body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;background:#0d1117;color:#e6edf3;max-width:900px;margin:0 auto;padding:20px;line-height:1.8}h1{color:#2dd4bf;border-bottom:2px solid #30363d;padding-bottom:10px}h2{color:#a78bfa;margin-top:36px}h3{color:#60a5fa;margin-top:24px}.step{background:#161b22;border:1px solid #30363d;border-radius:10px;padding:16px 20px;margin:12px 0}.step h4{color:#2dd4bf;margin:0 0 8px}.step p,.step li{margin:6px 0;color:#8b949e;font-size:.9rem}.step ul,.step ol{padding-left:20px}pre{background:#0a0e15;border:1px solid #30363d;border-radius:8px;padding:12px 16px;overflow-x:auto;font-size:.82rem;line-height:1.6}code{font-family:"Cascadia Code","Fira Code",monospace;font-size:.82rem}.c1{color:#2dd4bf}.c2{color:#6a9955}.c3{color:#fbbf24}.c4{color:#f472b6}.note{background:rgba(251,191,36,.1);border-left:3px solid #fbbf24;padding:10px 14px;margin:10px 0;border-radius:0 8px 8px 0;font-size:.85rem}.check{background:rgba(74,222,128,.08);border-left:3px solid #4ade80;padding:10px 14px;margin:10px 0;border-radius:0 8px 8px 0;font-size:.85rem}.warn{background:rgba(248,113,113,.08);border-left:3px solid #f87171;padding:10px 14px;margin:10px 0;border-radius:0 8px 8px 0;font-size:.85rem}table{width:100%;border-collapse:collapse;font-size:.85rem;color:#8b949e}td,th{padding:6px 10px;border:1px solid #30363d;text-align:left}th{background:rgba(96,165,250,.1);color:#60a5fa}</style></head><body>
+<h1>🤖 第3周：机器学习核心算法 — 详细教程</h1>
+<p style="color:#8b949e">⏱️ 每天 1.5小时 · 共 7 天</p>
+<p style="color:#8b949e">🎯 本周目标：从零掌握 sklearn，理解每种算法在药物研究中的适用场景。这是从"制药人"跨到"AI制药人"的关键转折。</p>
+
+<h2>Day 1：ML全景图 + 数据预处理 Pipeline</h2>
+<p style="color:#8b949e">⏱️ 1.5小时 · 🎯 理清ML知识地图，掌握 Pipeline 防止数据泄露</p>
+
+<div class="step"><h4>第1步：ML知识版图——一张图看懂所有算法</h4>
+<table><tr><th>类型</th><th>做什么</th><th>药物研究中的应用</th><th>典型算法</th></tr>
+<tr><td>监督学习·回归</td><td>预测连续值</td><td>预测溶解度/LogP/IC50/清除率</td><td>Linear/Ridge/Lasso/RF/XGBoost</td></tr>
+<tr><td>监督学习·分类</td><td>预测类别</td><td>有毒/无毒、活性/非活性、BBB穿透</td><td>Logistic/RF/XGBoost/SVM</td></tr>
+<tr><td>非监督·聚类</td><td>无标签分组</td><td>分子骨架分组、药效团聚类</td><td>KMeans/DBSCAN/层次聚类</td></tr>
+<tr><td>非监督·降维</td><td>压缩特征</td><td>分子可视化(t-SNE/PCA)</td><td>PCA/t-SNE/UMAP</td></tr>
+<tr><td>强化学习</td><td>序列决策</td><td>分子优化、逆合成分析</td><td>REINVENT(第7周学)</td></tr></table>
+</div>
+
+<div class="step"><h4>第2步：偏差 vs 方差——ML最核心的诊断框架</h4>
+<ul><li><b>偏差(Bias)高 = 欠拟合</b>：模型太简单，训练集和测试集表现都差 → 增加模型复杂度/加特征</li>
+<li><b>方差(Variance)高 = 过拟合</b>：模型太复杂，训练集表现很好但测试集差 → 加正则化/减特征/加数据</li>
+<li><b>目标：找到偏差-方差平衡点</b>——交叉验证误差最低的位置</li></ul>
+</div>
+
+<div class="step"><h4>第3步：跑通第一个 sklearn Pipeline（今天最重要的代码）</h4>
+<pre><code><span class="c1">import</span> pandas <span class="c1">as</span> pd; <span class="c1">import</span> numpy <span class="c1">as</span> np
+<span class="c1">from</span> sklearn.model_selection <span class="c1">import</span> train_test_split
+<span class="c1">from</span> sklearn.pipeline <span class="c1">import</span> Pipeline
+<span class="c1">from</span> sklearn.preprocessing <span class="c1">import</span> StandardScaler
+<span class="c1">from</span> sklearn.linear_model <span class="c1">import</span> LinearRegression
+<span class="c1">from</span> sklearn.metrics <span class="c1">import</span> r2_score, mean_absolute_error
+
+<span class="c2"># 加载你第2周保存的数据（或自己造数据）</span>
+<span class="c2"># df = pd.read_csv('egfr_features.csv')</span>
+<span class="c2"># X = df.drop(columns=['pIC50']); y = df['pIC50']</span>
+
+<span class="c2"># 如果没有真实数据，先造一份练习：</span>
+X = np.random.randn(200, 20)  <span class="c2"># 200个分子×20个描述符</span>
+y = X[:,0]*2.5 + X[:,1]*1.5 + np.random.randn(200)*0.3  <span class="c2"># 模拟pIC50</span>
+
+<span class="c2"># ===== 关键！先划分train/test，再做预处理 =====</span>
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42
+)
+
+<span class="c2"># Pipeline：标准化(只在train fit) + 模型</span>
+pipe = Pipeline([
+    (<span class="c3">'scaler'</span>, StandardScaler()),
+    (<span class="c3">'model'</span>, LinearRegression())
+])
+
+<span class="c2"># 训练</span>
+pipe.fit(X_train, y_train)
+
+<span class="c2"># 预测+评估</span>
+y_pred = pipe.predict(X_test)
+<span class="c1">print</span>(<span class="c3">f"R² = {r2_score(y_test, y_pred):.3f}"</span>)
+<span class="c1">print</span>(<span class="c3">f"MAE = {mean_absolute_error(y_test, y_pred):.3f}"</span>)</code></pre>
+<div class="warn">⚠️ <b>最常见的错误——数据泄露：</b>先对全部X做标准化再划分train/test → 测试集信息泄露到了训练集。Pipeline确保StandardScaler只在X_train上fit，在X_test上只transform。</div>
+</div>
+
+<div class="step"><h4>第4步：分层抽样——药物数据的特殊注意事项</h4>
+<p>药物数据常有"批次"或"化合物系列"的结构。同一批次的样本不能分散到不同 fold——要用 GroupKFold。</p>
+<pre><code><span class="c1">from</span> sklearn.model_selection <span class="c1">import</span> GroupKFold
+gkf = GroupKFold(n_splits=5)
+<span class="c1">for</span> train_idx, test_idx <span class="c1">in</span> gkf.split(X, y, groups=batch_ids):
+    X_train, X_test = X[train_idx], X[test_idx]</code></pre>
+</div>
+<div class="check">✅ <b>验收：</b>跑通 Pipeline，理解偏差vs方差，知道为什么不能先标准化再划分</div>
+
+<h2>Day 2：线性模型——从最小二乘到正则化</h2>
+<p style="color:#8b949e">⏱️ 1.5小时 · 🎯 理解线性回归原理，会用Lasso做特征选择</p>
+
+<div class="step"><h4>第1步：线性回归的数学直觉（不要求背公式，但要理解思想）</h4>
+<p>线性回归 = 找一条直线/超平面让预测值和真实值的差距最小。<code>y = w₁x₁ + w₂x₂ + ... + b</code></p>
+<p>正规方程：<code>w = (XᵀX)⁻¹Xᵀy</code> —— 直接解出最优参数。梯度下降：每次往误差减小的方向调一小步。</p>
+</div>
+
+<div class="step"><h4>第2步：Lasso vs Ridge vs ElasticNet——正则化的三种武器</h4>
+<table><tr><th>方法</th><th>惩罚项</th><th>效果</th><th>适用场景</th></tr>
+<tr><td>Ridge(L2)</td><td>Σw²</td><td>把系数压小但不压到0</td><td>特征都有用但需防过拟合</td></tr>
+<tr><td>Lasso(L1)</td><td>Σ|w|</td><td>把不重要特征的系数压到0→自动特征选择</td><td>特征多但要选重要的</td></tr>
+<tr><td>ElasticNet</td><td>αL1+βL2</td><td>两者混合</td><td>特征多且存在相关性</td></tr></table>
+</div>
+
+<div class="step"><h4>第3步：实战对比</h4>
+<pre><code><span class="c1">from</span> sklearn.linear_model <span class="c1">import</span> LinearRegression, Ridge, Lasso, ElasticNet
+models = {
+    <span class="c3">'OLS'</span>: LinearRegression(),
+    <span class="c3">'Ridge'</span>: Ridge(alpha=1.0),
+    <span class="c3">'Lasso'</span>: Lasso(alpha=0.1),
+    <span class="c3">'ElasticNet'</span>: ElasticNet(alpha=0.1, l1_ratio=0.5)
+}
+<span class="c1">for</span> name, m <span class="c1">in</span> models.items():
+    pipe = Pipeline([(<span class="c3">'scaler'</span>,StandardScaler()),(<span class="c3">'model'</span>,m)])
+    pipe.fit(X_train, y_train)
+    <span class="c1">print</span>(<span class="c3">f"{name:12s} R²={pipe.score(X_test,y_test):.3f}"</span>)
+<span class="c2"># 看Lasso把哪些特征压到了0</span>
+lasso = Lasso(alpha=0.1); lasso.fit(StandardScaler().fit_transform(X_train), y_train)
+nonzero = np.where(lasso.coef_ != 0)[0]
+<span class="c1">print</span>(<span class="c3">f"Lasso保留了{len(nonzero)}/{X.shape[1]}个特征"</span>)</code></pre>
+</div>
+<div class="check">✅ <b>验收：</b>理解Lasso(L1)和Ridge(L2)的核心区别，能跑模型对比</div>
+
+<h2>Day 3：树模型——随机森林 + 特征重要性</h2>
+<p style="color:#8b949e">⏱️ 1.5小时 · 🎯 掌握RF和XGBoost，理解特征重要性在药物研究中的价值</p>
+
+<div class="step"><h4>树模型的四大优势（为什么药物研究偏爱树模型）</h4>
+<ol><li>不需要特征标准化——量纲无所谓</li><li>天然处理非线性关系——不用手动构造交互特征</li><li><b>特征重要性</b>——可以直接告诉药化人员"哪个分子特征最重要"</li><li>对缺失值鲁棒——不需要精细的缺失值填充</li></ol>
+</div>
+
+<div class="step"><h4>随机森林实战——含特征重要性</h4>
+<pre><code><span class="c1">from</span> sklearn.ensemble <span class="c1">import</span> RandomForestRegressor
+rf = RandomForestRegressor(n_estimators=100, max_depth=10, random_state=42)
+rf.fit(X_train, y_train)
+<span class="c1">print</span>(<span class="c3">f"RF R²={rf.score(X_test,y_test):.3f}"</span>)
+
+<span class="c2"># 特征重要性——今天最重要的输出</span>
+imp = pd.DataFrame({<span class="c3">'特征'</span>: [<span class="c3">f'desc_{i}'</span> <span class="c1">for</span> i <span class="c1">in</span> <span class="c1">range</span>(X.shape[1])],
+                    <span class="c3">'重要性'</span>: rf.feature_importances_})
+<span class="c1">print</span>(imp.sort_values(<span class="c3">'重要性'</span>, ascending=<span class="c1">False</span>).head(10))</code></pre>
+</div>
+
+<div class="step"><h4>XGBoost——工业界标准</h4>
+<pre><code><span class="c2"># pip install xgboost</span>
+<span class="c1">from</span> xgboost <span class="c1">import</span> XGBRegressor
+xgb = XGBRegressor(n_estimators=100, max_depth=6, learning_rate=0.1)
+xgb.fit(X_train, y_train)
+<span class="c1">print</span>(<span class="c3">f"XGBoost R²={xgb.score(X_test,y_test):.3f}"</span>)</code></pre>
+</div>
+<div class="check">✅ <b>验收：</b>会用RF和XGBoost，能解释特征重要性的含义</div>
+
+<h2>Day 4：模型选择方法论——什么时候该用什么模型</h2>
+<p style="color:#8b949e">⏱️ 1.5小时 · 🎯 建立模型选择的直觉</p>
+
+<div class="step"><h4>模型选择决策树（记下来，以后每次选模型对照这个）</h4>
+<table><tr><th>条件</th><th>推荐模型</th><th>原因</th></tr>
+<tr><td>数据&lt;1000条 + 特征&lt;20</td><td>Lasso/Ridge</td><td>简单可解释，不易过拟合</td></tr>
+<tr><td>数据1000-10000+非线性</td><td>RF/XGBoost</td><td>大多数情况的首选</td></tr>
+<tr><td>数据&gt;10000+GPU</td><td>深度学习</td><td>大数据量下DL优势明显</td></tr>
+<tr><td>需要极高可解释性</td><td>线性模型/浅决策树</td><td>能精确解释每个预测</td></tr>
+<tr><td>作为baseline</td><td>RF或XGBoost</td><td>快+结果可靠</td></tr></table>
+</div>
+<div class="step"><h4>练习</h4>
+<p>同一份数据跑7个模型(Linear/Ridge/Lasso/RF/XGBoost/SVR/KNN)，记录R²和训练时间，写一段"我选哪个模型？为什么？"</p>
+</div>
+
+<h2>Day 5：模型评估——不只是看准确率</h2>
+<p style="color:#8b949e">⏱️ 1.5小时 · 🎯 掌握严谨的评估方法学</p>
+<div class="step"><h4>分类陷阱案例</h4>
+<p>1000个化合物中只有10个有毒。模型全猜"无毒"→准确率99%→但这个模型<b>完全没用</b>！它漏掉了所有有毒分子。</p>
+<p><b>正确姿势：</b>混淆矩阵 → Precision(预测有毒中真的有毒) + Recall(所有有毒中被找到了多少) + F1 + AUC-ROC</p>
+<p><b>药物安全性预测的特殊性：</b>假阴性（漏掉有毒分子）比假阳性（误判为有毒）严重得多 → <b>优先保证 Recall！</b></p>
+</div>
+
+<div class="step"><h4>分类评估全代码</h4>
+<pre><code><span class="c1">from</span> sklearn.metrics <span class="c1">import</span> (confusion_matrix, classification_report,
+    roc_auc_score, ConfusionMatrixDisplay, RocCurveDisplay)
+y_pred = model.predict(X_test)
+<span class="c1">print</span>(classification_report(y_test, y_pred))
+ConfusionMatrixDisplay.from_estimator(model, X_test, y_test)
+RocCurveDisplay.from_estimator(model, X_test, y_test)</code></pre>
+</div>
+
+<div class="step"><h4>回归指标 + 交叉验证</h4>
+<pre><code><span class="c1">from</span> sklearn.model_selection <span class="c1">import</span> cross_val_score, KFold, GroupKFold
+<span class="c2"># 标准5折CV</span>
+scores = cross_val_score(model, X, y, cv=5, scoring=<span class="c3">'r2'</span>)
+<span class="c1">print</span>(<span class="c3">f"5折CV R²: {scores.mean():.3f} ± {scores.std():.3f}"</span>)
+<span class="c2"># 按批次分组CV（药物研究必用！）</span>
+gkf = GroupKFold(n_splits=5)
+scores = cross_val_score(model, X, y, cv=gkf, groups=batch_ids, scoring=<span class="c3">'r2'</span>)</code></pre>
+</div>
+
+<div class="step"><h4>学习曲线——诊断过拟合/欠拟合的利器</h4>
+<pre><code><span class="c1">from</span> sklearn.model_selection <span class="c1">import</span> learning_curve
+train_sz, train_sc, test_sc = learning_curve(model, X, y, cv=5, scoring=<span class="c3">'r2'</span>)
+<span class="c2"># 训练分高验证分低→过拟合；两者都低→欠拟合；两者收敛且OK→刚好</span></code></pre>
+</div>
+<div class="check">✅ <b>验收：</b>能写完整评估报告，会画学习曲线诊断问题</div>
+
+<h2>Day 6：超参数调优 + 特征选择</h2>
+<p style="color:#8b949e">⏱️ 1.5小时 · 🎯 自动化调参和选特征</p>
+<div class="step"><h4>GridSearchCV 实战</h4>
+<pre><code><span class="c1">from</span> sklearn.model_selection <span class="c1">import</span> GridSearchCV
+param_grid = {<span class="c3">'max_depth'</span>: [3,5,10,<span class="c1">None</span>], <span class="c3">'n_estimators'</span>: [50,100,200]}
+gs = GridSearchCV(RandomForestRegressor(), param_grid, cv=5, scoring=<span class="c3">'r2'</span>)
+gs.fit(X_train, y_train)
+<span class="c1">print</span>(<span class="c3">f"最优参数: {gs.best_params_}"</span>)
+<span class="c1">print</span>(<span class="c3">f"最优R²: {gs.best_score_:.3f}"</span>)</code></pre>
+</div>
+<div class="step"><h4>特征选择三剑客</h4>
+<ol><li><b>方差过滤</b>：VarianceThreshold——删除几乎不变的特征</li><li><b>互信息</b>：mutual_info_regression——选和目标最相关的</li><li><b>RFE递归消除</b>：反复训练模型→删最不重要→循环——最准但最费时</li></ol>
+</div>
+<div class="note">💡 <b>工业界血泪教训：</b>调参的收益通常不如特征工程。花70%时间在特征上，30%在调参上。好特征+默认参数 > 烂特征+完美参数。</div>
+
+<h2>Day 7：🔄 本周复习 + GitHub 项目上传</h2>
+<div class="step"><h4>行动清单</h4>
+<ol><li>GitHub创建仓库 <b>ai-pharma-ml</b></li><li>代码按结构组织：data/ / notebooks/ / models/ / utils/</li><li>写 README：项目目的、数据来源、模型对比表、最优结果、使用方法</li><li>确保别人 git clone 后能跑通</li><li>提交第一个 commit！🎉</li></ol>
+</div>
+<div class="check">✅ <b>本周验收：</b>GitHub仓库公开可访问，README清晰完整，模型对比表完整</div>
+
+<div style="margin-top:40px;padding-top:20px;border-top:1px solid #30363d;text-align:center;color:#8b949e">
+  <p>🏁 第3周（ML核心算法）完成 · 约5000字详细教程</p>
+</div>
+</body></html>

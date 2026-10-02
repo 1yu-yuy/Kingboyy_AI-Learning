@@ -1,0 +1,55 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>第9周·详细教程</title>
+<style>body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;background:#0d1117;color:#e6edf3;max-width:900px;margin:0 auto;padding:20px;line-height:1.8}h1{color:#2dd4bf}h2{color:#a78bfa;margin-top:36px}h3{color:#60a5fa}.step{background:#161b22;border:1px solid #30363d;border-radius:10px;padding:16px 20px;margin:12px 0}.step h4{color:#2dd4bf;margin:0 0 8px}.step p,.step li{margin:6px 0;color:#8b949e;font-size:.9rem}pre{background:#0a0e15;border:1px solid #30363d;border-radius:8px;padding:12px 16px;overflow-x:auto;font-size:.82rem;line-height:1.6}code{font-family:"Cascadia Code","Fira Code",monospace;font-size:.82rem}.c1{color:#2dd4bf}.c2{color:#6a9955}.c3{color:#fbbf24}.note{background:rgba(251,191,36,.1);border-left:3px solid #fbbf24;padding:10px 14px;margin:10px 0;border-radius:0 8px 8px 0;font-size:.85rem}</style></head><body>
+<h1>🏭 第9周：项目一·AI工艺参数优化</h1>
+<p style="color:#8b949e">⏱️ 每天 2小时 · 共 7 天</p>
+<p style="color:#8b949e">🎯 用ML/DL优化制药工艺参数——这是最能体现你"制药工程+AI"复合背景的项目</p>
+
+<h2>Day 1：问题定义 + 数据准备</h2>
+<div class="step"><h4>选哪个工艺场景？推荐：原料药结晶工艺优化</h4>
+<p><b>为什么选结晶？</b>结晶决定了原料药的晶型、粒径、纯度——直接影响制剂和生物利用度。工艺参数多(温度/pH/搅拌/降温速率/晶种量)、目标多样(收率+纯度+粒径)=非常适合ML。</p>
+</div>
+
+<div class="step"><h4>定义输入输出</h4>
+<table><tr><th>输入(工艺参数)</th><th>范围</th><th>输出(质量指标)</th><th>目标</th></tr>
+<tr><td>结晶温度</td><td>0~10°C</td><td>收率</td><td>最大化</td></tr>
+<tr><td>降温速率</td><td>0.1~1°C/min</td><td>纯度</td><td>>99.5%</td></tr>
+<tr><td>搅拌转速</td><td>150~400rpm</td><td>粒径D50</td><td>80~120μm</td></tr>
+<tr><td>晶种量</td><td>0.5~3%</td><td>晶型</td><td>目标晶型</td></tr>
+<tr><td>陈化时间</td><td>1~6h</td><td>松密度</td><td>特定范围</td></tr>
+</table>
+</div>
+
+<div class="step"><h4>构造300批模拟工艺数据</h4>
+<pre><code>np.random.seed(42); n = 300
+df = pd.DataFrame({
+    <span class="c3">'结晶温度_C'</span>: np.random.uniform(0, 10, n),
+    <span class="c3">'降温速率_Cpermin'</span>: np.random.uniform(0.1, 1.0, n),
+    <span class="c3">'搅拌转速_rpm'</span>: np.random.uniform(150, 400, n),
+    <span class="c3">'晶种量_pct'</span>: np.random.uniform(0.5, 3.0, n),
+    <span class="c3">'陈化时间_h'</span>: np.random.uniform(1, 6, n),
+    <span class="c3">'pH'</span>: np.random.normal(7, 0.3, n),
+})
+<span class="c2"># 加入非线性和交互效应的真实模拟</span>
+T = df[<span class="c3">'结晶温度_C'</span>]; S = df[<span class="c3">'搅拌转速_rpm'</span>]
+df[<span class="c3">'收率_%'</span>] = 80 + 2*(T-5) - 0.1*(T-5)**2 + 0.005*(S-275) + np.random.normal(0,3,n)
+df[<span class="c3">'纯度_%'</span>] = 99.5 - 0.02*(T-5)**2 + 0.003*(S-300) + np.random.normal(0,0.2,n)
+df[<span class="c3">'收率_%'</span>] = df[<span class="c3">'收率_%'</span>].clip(65,97); df[<span class="c3">'纯度_%'</span>] = df[<span class="c3">'纯度_%'</span>].clip(98,100)</code></pre>
+</div>
+
+<h2>Day 2：工艺数据EDA</h2>
+<p>完整探索：分布图+相关性+平行坐标图+异常批次识别。工艺数据可视化的灵魂是<b>平行坐标图</b>。</p>
+
+<h2>Day 3：工艺特征工程——注入领域知识</h2>
+<p><b>这是你作为制药工程科班生的优势所在！</b></p>
+<ul><li><b>热处理强度</b>=温度×时间的积分（反映物料受到的总热量）</li><li><b>降温速率²</b>（结晶动力学中速率影响是非线性的）</li><li><b>搅拌功率数</b>=转速²×桨直径⁵（流体力学无量纲数）</li><li><b>过饱和度比</b>=C/C*（结晶驱动力——如果有溶解度数据）</li></ul>
+
+<h2>Day 4-5：多输出回归模型 + Optuna贝叶斯优化</h2>
+<p>MultiOutputRegressor(RF/XGBoost)→按批次CV评估→Optuna贝叶斯优化找最优工艺参数→设计空间可视化→推荐参数附置信区间</p>
+
+<h2>Day 6-7：Streamlit Demo + 项目发布</h2>
+<p>搭交互Demo：参数滑条→实时预测→一键优化→部署到Streamlit Cloud→GitHub Release→录制Demo视频</p>
+
+<div style="margin-top:40px;padding-top:20px;border-top:1px solid #30363d;text-align:center;color:#8b949e">
+  <p>🏁 第9周（AI工艺参数优化）完成</p>
+</div>
+</body></html>

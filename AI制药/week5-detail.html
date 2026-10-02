@@ -1,0 +1,149 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>第5周·详细教程</title>
+<style>body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;background:#0d1117;color:#e6edf3;max-width:900px;margin:0 auto;padding:20px;line-height:1.8}h1{color:#2dd4bf;border-bottom:2px solid #30363d;padding-bottom:10px}h2{color:#a78bfa;margin-top:36px}h3{color:#60a5fa}.step{background:#161b22;border:1px solid #30363d;border-radius:10px;padding:16px 20px;margin:12px 0}.step h4{color:#2dd4bf;margin:0 0 8px}.step p,.step li{margin:6px 0;color:#8b949e;font-size:.9rem}pre{background:#0a0e15;border:1px solid #30363d;border-radius:8px;padding:12px 16px;overflow-x:auto;font-size:.82rem;line-height:1.6}code{font-family:"Cascadia Code","Fira Code",monospace;font-size:.82rem}.c1{color:#2dd4bf}.c2{color:#6a9955}.c3{color:#fbbf24}.note{background:rgba(251,191,36,.1);border-left:3px solid #fbbf24;padding:10px 14px;margin:10px 0;border-radius:0 8px 8px 0;font-size:.85rem}.check{background:rgba(74,222,128,.08);border-left:3px solid #4ade80;padding:10px 14px;margin:10px 0;border-radius:0 8px 8px 0;font-size:.85rem}</style></head><body>
+<h1>🔥 第5周：PyTorch 从零到能训练模型 — 详细教程</h1>
+<p style="color:#8b949e">⏱️ 每天 1.5小时 · 共 7 天</p>
+<p style="color:#8b949e">🎯 本周目标：掌握 PyTorch 核心——Tensor、Autograd、nn.Module、CNN、LSTM、迁移学习。本周重点：<b>理解动态计算图</b>。</p>
+
+<h2>Day 1：PyTorch 安装 + Tensor = GPU加速版NumPy</h2>
+<p style="color:#8b949e">⏱️ 1.5小时 · 🎯 PyTorch环境就绪，能用Tensor替代NumPy</p>
+
+<div class="step"><h4>安装 PyTorch</h4>
+<pre><code><span class="c2"># CPU版（没有NVIDIA显卡用这个）</span>
+<span class="c1">pip install torch torchvision torchaudio</span>
+
+<span class="c2"># GPU版（有NVIDIA显卡去 pytorch.org 选对应CUDA版本）</span>
+<span class="c2"># 例如 CUDA 11.8:</span>
+<span class="c1">pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118</span></code></pre>
+</div>
+
+<div class="step"><h4>验证 + Tensor vs NumPy</h4>
+<pre><code><span class="c1">import</span> torch; <span class="c1">import</span> numpy <span class="c1">as</span> np
+<span class="c1">print</span>(<span class="c3">f"PyTorch版本: {torch.__version__}"</span>)
+<span class="c1">print</span>(<span class="c3">f"CUDA可用: {torch.cuda.is_available()}"</span>)
+
+<span class="c2"># Tensor ↔ NumPy 互转</span>
+x_np = np.array([1,2,3]); x_t = torch.from_numpy(x_np)  <span class="c2"># 共享内存!</span>
+x_np2 = x_t.numpy()
+
+<span class="c2"># GPU加速——感受速度差</span>
+<span class="c1">if</span> torch.cuda.is_available():
+    a = torch.randn(4000,4000).cuda()
+    b = torch.randn(4000,4000).cuda()
+    %timeit a @ b  <span class="c2"># GPU比CPU快几十倍</span></code></pre>
+</div>
+<div class="check">✅ import torch不报错，知道.cuda()的含义</div>
+
+<h2>Day 2：Autograd——PyTorch的核心魔法</h2>
+<p style="color:#8b949e">⏱️ 1.5小时 · 🎯 理解自动微分，能求任意函数的梯度</p>
+
+<div class="step"><h4>理解 Autograd——这改变了深度学习</h4>
+<pre><code><span class="c2"># 手写 y=x³+2x 在 x=2 处的导数</span>
+<span class="c2"># 数学：dy/dx = 3x²+2 = 3×4+2 = 14</span>
+x = torch.tensor([2.0], requires_grad=<span class="c1">True</span>)
+y = x**3 + 2*x
+y.backward()
+<span class="c1">print</span>(<span class="c3">f"PyTorch自动求导: {x.grad.item()}"</span>)  <span class="c2"># 应输出14.0</span></code></pre>
+<p><b>关键概念：</b></p><ul>
+<li><b>requires_grad=True</b>：告诉PyTorch"我要对这个变量求导"</li>
+<li><b>backward()</b>：自动计算所有 requires_grad=True 的变量的梯度</li>
+<li><b>.grad</b>：存梯度值（每次 backward 会累加——所以要 zero_grad）</li>
+<li><b>动态计算图</b>：每次 forward 都重新构建图——这是 PyTorch 和 TensorFlow 1.x 的最大区别</li></ul>
+</div>
+<div class="step"><h4>练习：求偏导数</h4>
+<pre><code><span class="c2"># f(x,y) = x²y + sin(xy)，求在(1,2)处的梯度</span>
+x = torch.tensor([1.0], requires_grad=<span class="c1">True</span>)
+y = torch.tensor([2.0], requires_grad=<span class="c1">True</span>)
+f = x**2 * y + torch.sin(x*y)
+f.backward()
+<span class="c1">print</span>(<span class="c3">f"∂f/∂x = {x.grad.item():.4f}"</span>)  <span class="c2"># 2×1×2+2×cos(2)=4-0.832=3.168</span>
+<span class="c1">print</span>(<span class="c3">f"∂f/∂y = {y.grad.item():.4f}"</span>)  <span class="c2"># 1²+1×cos(2)=1-0.416=0.584</span></code></pre>
+</div>
+<div class="check">✅ 理解 requires_grad/backward/grad/zero_grad 四个关键概念</div>
+
+<h2>Day 3：nn.Module + DataLoader——搭建第一个神经网络</h2>
+<p style="color:#8b949e">⏱️ 1.5小时 · 🎯 能用PyTorch搭建全连接网络并完成训练</p>
+
+<div class="step"><h4>训练循环标准模板（背下来！）</h4>
+<pre><code><span class="c1">import</span> torch; <span class="c1">import</span> torch.nn <span class="c1">as</span> nn
+<span class="c1">from</span> torch.utils.data <span class="c1">import</span> DataLoader, TensorDataset
+
+<span class="c2"># 1. 准备数据</span>
+X_t = torch.tensor(X_train, dtype=torch.float32)
+y_t = torch.tensor(y_train, dtype=torch.float32).reshape(-1,1)
+dataset = TensorDataset(X_t, y_t)
+loader = DataLoader(dataset, batch_size=32, shuffle=<span class="c1">True</span>)
+
+<span class="c2"># 2. 定义模型</span>
+<span class="c1">class</span> <span class="c4">MolNet</span>(nn.Module):
+    <span class="c1">def</span> <span class="c4">__init__</span>(<span class="c4">self</span>, in_dim, hidden=128):
+        <span class="c4">super</span>().__init__()
+        <span class="c4">self</span>.net = nn.Sequential(
+            nn.Linear(in_dim, hidden), nn.ReLU(), nn.Dropout(0.2),
+            nn.Linear(hidden, hidden//2), nn.ReLU(), nn.Dropout(0.2),
+            nn.Linear(hidden//2, 1)
+        )
+    <span class="c1">def</span> <span class="c4">forward</span>(<span class="c4">self</span>, x):
+        <span class="c1">return</span> <span class="c4">self</span>.net(x)
+
+model = MolNet(in_dim=X.shape[1])
+loss_fn = nn.MSELoss(); optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+
+<span class="c2"># 3. 训练循环</span>
+<span class="c1">for</span> epoch <span class="c1">in</span> <span class="c1">range</span>(100):
+    model.train()
+    <span class="c1">for</span> xb, yb <span class="c1">in</span> loader:
+        pred = model(xb)
+        loss = loss_fn(pred, yb)
+        optimizer.zero_grad()       <span class="c2"># 清零上次梯度</span>
+        loss.backward()              <span class="c2"># 反向传播</span>
+        optimizer.step()             <span class="c2"># 更新权重</span>
+    <span class="c1">if</span> (epoch+1) % 20 == 0:
+        <span class="c1">print</span>(<span class="c3">f"Epoch {epoch+1} Loss={loss.item():.4f}"</span>)</code></pre>
+<div class="note">💡 训练循环6行是PyTorch最核心的范式——把这些行背下来。所有模型（CNN/LSTM/GNN/Transformer）都是这个循环。</div>
+</div>
+<div class="check">✅ 能写出标准训练循环，理解每一步的作用</div>
+
+<h2>Day 4：CNN基础——卷积操作及其在分子中的应用</h2>
+<p style="color:#8b949e">⏱️ 1.5小时 · 🎯 理解卷积核/步长/填充/池化</p>
+
+<div class="step"><h4>核心概念可视化</h4>
+<ul><li><b>卷积核(kernel)</b>：滑动窗口，对局部区域做加权求和——检测局部模式</li><li><b>步长(stride)</b>：窗口每次滑多远。步长>1 → 降采样</li><li><b>填充(padding)</b>：边缘补0——控制输出尺寸。padding=kernel//2 → 输出和输入同尺寸</li><li><b>池化(pooling)</b>：降采样保留最强信号——MaxPool/MeanPool</li></ul>
+</div>
+
+<div class="step"><h4>1D CNN 处理 SMILES 序列</h4>
+<pre><code><span class="c1">class</span> <span class="c4">SMILES_CNN</span>(nn.Module):
+    <span class="c1">def</span> <span class="c4">__init__</span>(<span class="c4">self</span>, vocab_size, embed_dim=64):
+        <span class="c4">super</span>().__init__()
+        <span class="c4">self</span>.embed = nn.Embedding(vocab_size, embed_dim)
+        <span class="c4">self</span>.conv1 = nn.Conv1d(embed_dim, 128, kernel_size=3, padding=1)
+        <span class="c4">self</span>.conv2 = nn.Conv1d(128, 256, kernel_size=5, padding=2)
+        <span class="c4">self</span>.pool = nn.AdaptiveMaxPool1d(1)
+        <span class="c4">self</span>.fc = nn.Linear(256, 1)
+    <span class="c1">def</span> <span class="c4">forward</span>(<span class="c4">self</span>, x):
+        x = <span class="c4">self</span>.embed(x).transpose(1,2)  <span class="c2"># (B,L,E)→(B,E,L)</span>
+        x = torch.relu(<span class="c4">self</span>.conv1(x)); x = torch.relu(<span class="c4">self</span>.conv2(x))
+        x = <span class="c4">self</span>.pool(x).squeeze(-1)
+        <span class="c1">return</span> <span class="c4">self</span>.fc(x)</code></pre>
+</div>
+
+<h2>Day 5：RNN/LSTM——序列建模的工具</h2>
+<p style="color:#8b949e">⏱️ 1.5小时 · 🎯 理解LSTM门控机制</p>
+<div class="step"><h4>LSTM三门的直觉理解</h4>
+<ul><li><b>遗忘门(Forget Gate)</b>：决定丢掉哪些旧信息。sigmoid→0~1，0=全忘</li><li><b>输入门(Input Gate)</b>：决定存入哪些新信息。sigmoid控制"开关"+tanh生成"候选值"</li><li><b>输出门(Output Gate)</b>：决定输出哪些信息。基于当前细胞状态过滤</li></ul>
+</div>
+<pre><code>lstm = nn.LSTM(input_size=64, hidden_size=128, num_layers=2, batch_first=<span class="c1">True</span>)</code></pre>
+
+<h2>Day 6：迁移学习——小数据的大救星</h2>
+<p>对药物研究特别重要——大多数药研数据集只有几百到几千条数据。策略：用大数据预训练的模型提取特征→在小数据上微调。</p>
+<pre><code><span class="c2"># 冻结浅层</span>
+<span class="c1">for</span> param <span class="c1">in</span> pretrained_model.features.parameters():
+    param.requires_grad = <span class="c1">False</span>
+<span class="c2"># 只训练最后几层</span></code></pre>
+
+<h2>Day 7：🔄 本周复习</h2>
+<ul><li>综合项目：SMILES→LSTM/CNN→性质预测→完整训练+评估+可视化</li><li>对比 PyTorch vs sklearn 的代码量和性能</li><li>整理PyTorch代码模板（train.py/model.py/data.py/eval.py）</li></ul>
+
+<div style="margin-top:40px;padding-top:20px;border-top:1px solid #30363d;text-align:center;color:#8b949e">
+  <p>🏁 第5周（PyTorch核心）完成</p>
+</div>
+</body></html>

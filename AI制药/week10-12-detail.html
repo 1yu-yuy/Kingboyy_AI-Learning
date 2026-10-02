@@ -1,0 +1,84 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>第10-12周·详细教程</title>
+<style>body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;background:#0d1117;color:#e6edf3;max-width:900px;margin:0 auto;padding:20px;line-height:1.8}h1{color:#2dd4bf;border-bottom:2px solid #30363d;padding-bottom:10px}h2{color:#a78bfa;margin-top:36px}h3{color:#60a5fa}.step{background:#161b22;border:1px solid #30363d;border-radius:10px;padding:16px 20px;margin:12px 0}.step h4{color:#2dd4bf;margin:0 0 8px}.step p,.step li{margin:6px 0;color:#8b949e;font-size:.9rem}pre{background:#0a0e15;border:1px solid #30363d;border-radius:8px;padding:12px 16px;overflow-x:auto;font-size:.82rem;line-height:1.6}code{font-family:"Cascadia Code","Fira Code",monospace;font-size:.82rem}.c1{color:#2dd4bf}.c2{color:#6a9955}.c3{color:#fbbf24}.note{background:rgba(251,191,36,.1);border-left:3px solid #fbbf24;padding:10px 14px;margin:10px 0;border-radius:0 8px 8px 0;font-size:.85rem}.check{background:rgba(74,222,128,.08);border-left:3px solid #4ade80;padding:10px 14px;margin:10px 0;border-radius:0 8px 8px 0}</style></head><body>
+<h1>📦 第10-12周：项目二·三 + 求职变现</h1>
+<p style="color:#8b949e">⏱️ 每天 1.5-2小时 · 共 21 天</p>
+
+<!-- WEEK 10 -->
+<h2>第10周：项目二·AI批记录审核（NLP+LLM）</h2>
+<p style="color:#8b949e">🎯 用NLP自动审阅药品批生产记录——AI制药独特的细分场景</p>
+
+<div class="step"><h4>为什么这是差异化项目？</h4>
+<p>AI制药赛道做批记录审核的人非常少！大部分人在做分子生成/性质预测，而批记录审核是药企QA部门真实的日常痛点。这个项目=你面试时的记忆力锚点。</p></div>
+
+<h3>Day 1-2：批记录结构理解 + OCR文本提取</h3>
+<div class="step"><h4>批记录是什么？</h4>
+<p>每一批药品生产从投料到包装的完整操作记录，通常200-500页。QA部门需要逐页审核：参数是否在范围内？步骤是否按顺序？签名是否完整？有没有偏差/异常？</p>
+<p><b>GMP要求(21CFR211.188)：</b>批记录必须包含产品名称、批号、生产日期、各步骤操作时间、操作人和复核人签名、IPC检测结果、最终收率和质量检验结果。</p></div>
+
+<h3>Day 3-4：NER实体识别 + 异常检测规则引擎</h3>
+<p>用 spaCy 训练命名实体识别(NER)：</p>
+<ul><li>识别实体：产品名/批号/日期/温度值/压力值/操作人姓名/设备编号</li>
+<li>规则引擎：温度超出范围？步骤漏了？时间逻辑不对（下一步开始时间<上一步结束时间）？签名缺失？</li></ul>
+
+<h3>Day 5-7：LLM辅助审核 + 完整工具开发 + 发布</h3>
+<p>LLM做软判断（理解非结构化描述、判断偏差严重性）+ 规则引擎做硬检查（精确数值比对）= 混合架构。Streamlit界面：上传批记录PDF→一键审核→可视化审核报告。</p>
+
+<!-- WEEK 11 -->
+<h2>第11周：项目三·ADMET Web预测工具（全栈部署）</h2>
+<p style="color:#8b949e">🎯 将第4周的ADMET项目升级为生产可用的Web工具</p>
+
+<h3>Day 1-2：GNN模型升级 + 模型集成</h3>
+<div class="step"><h4>升级路线</h4>
+<ol><li>传统ML(RF/XGBoost)→GNN(MPNN/GAT)→性能提升多少？</li><li>多数据集联合训练→一个模型预测多个ADMET指标</li><li>Deep Ensemble：训练5个不同随机种子的模型→取均值和方差→预测+不确定性</li><li><b>高不确定性→提示"建议实验验证"</b>（这在医药场景非常重要！）</li></ol></div>
+
+<h3>Day 3-4：FastAPI后端 + React前端</h3>
+<pre><code><span class="c1">from</span> fastapi <span class="c1">import</span> FastAPI; <span class="c1">from</span> pydantic <span class="c1">import</span> BaseModel
+app = FastAPI()
+<span class="c1">class</span> <span class="c4">PredictRequest</span>(BaseModel):
+    smiles: <span class="c1">str</span>
+<span class="c1">class</span> <span class="c4">PredictResponse</span>(BaseModel):
+    solubility: <span class="c1">float</span>; herg_risk: <span class="c1">float</span>; bbb_penetration: <span class="c1">float</span>
+    uncertainty: <span class="c1">float</span>  <span class="c2"># 预测的不确定性</span>
+
+@app.post(<span class="c3">"/predict"</span>, response_model=PredictResponse)
+<span class="c1">async</span> <span class="c1">def</span> <span class="c4">predict</span>(req: PredictRequest): ...</code></pre>
+
+<h3>Day 5-7：Docker容器化 + 部署上线 + 测试文档</h3>
+<p>Dockerfile→docker-compose→Railway/Render部署→HTTPS→自动化测试→用户文档→公开访问链接。这个项目就是你求职时的"实力证明"。</p>
+
+<!-- WEEK 12 -->
+<h2>第12周：整合 + 求职/变现准备</h2>
+<p style="color:#8b949e">🎯 整理 Portfolio，准备进入 AI 制药行业</p>
+
+<div class="step"><h4>Day 1：GitHub Portfolio 全面整理</h4>
+<ul><li>3个项目仓库统一README模板（项目背景→技术栈→Demo截图→安装→结果）</li><li>GitHub Profile README：制药工程+AI技能+3个核心项目+技能雷达图</li><li><b>中英双语</b>——国内外HR都能看</li><li>Topics标签：ai-drug-discovery/rdkit/pytorch-geometric/gmp/cheminformatics</li></ul></div>
+
+<div class="step"><h4>Day 2：简历优化——制药工程 × AI 复合定位</h4>
+<p><b>STAR法则写项目：</b>Situation(制药工艺效率低/ADMET预测耗时/批记录人工审核慢)→Task(用AI优化)→Action(你做了什么)→Result(量化成果：R²=0.85/审核效率提升10倍/XX个分子)</p>
+<p><b>核心卖点：</b>"制药工程本科+AI自学12周→3个实战项目"——这是AI制药赛道稀缺的复合背景</p></div>
+
+<div class="step"><h4>Day 3：技术面试准备——AI制药专属题库</h4>
+<p><b>ML基础题：</b></p><ul><li>偏差vs方差的权衡是什么？怎么诊断过拟合/欠拟合？</li><li>Lasso和Ridge的区别？什么时候用哪个？</li><li>交叉验证为什么要按批次分组？</li><li>分类不平衡怎么处理？为什么毒性预测看重Recall？</li></ul>
+<p><b>制药领域题：</b></p><ul><li>ADMET每个字母代表什么？哪些指标最重要？</li><li>GMP/ALCOA+/21CFR11对AI系统有什么要求？</li><li>工艺验证三阶段是什么？AI在哪个阶段最有价值？</li></ul></div>
+
+<div class="step"><h4>Day 4：行业调研 + 目标公司清单</h4>
+<p><b>大型药企AI部门：</b>辉瑞/诺华/罗氏/阿斯利康/恒瑞/百济神州→薪资高、平台大、但AI应用偏保守</p>
+<p><b>AI制药创业公司：</b>晶泰科技/英矽智能/百图生科/深势科技/剂泰医药→AI氛围浓、技术前沿、成长空间大</p>
+<p><b>CRO(合同研究组织)：</b>药明康德/康龙化成/美迪西→AI+服务模式、客户需求驱动</p>
+<p>每家调研：融资额+技术方向+在招岗位+团队背景→优先投"制药+AI"匹配度最高的</p></div>
+
+<div class="step"><h4>Day 5：技术博客——建立个人品牌</h4>
+<p>选题建议：<b>"一个制药工程师如何用12周入门AI——学习路线+3个项目分享"</b></p>
+<p>发布：知乎+掘金+Medium(英文版)。文章末尾放GitHub链接和联系方式。这种"转行经验贴"通常阅读量很高→自然会有HR来联系你。</p></div>
+
+<div class="step"><h4>Day 6-7：下一步决策 + 🏁 毕业总结</h4>
+<p>三条路线评估：</p><ol><li><b>进药企AI部门</b>：稳定+薪资中上+能接触到真实药研数据→适合积累经验</li><li><b>加入AI制药初创</b>：高风险高回报+技术成长快→适合想快速成长的人</li><li><b>自己做AI制药SaaS</b>：做中小药企的AI工具（AI批记录审核/工艺优化SaaS）→适合有创业想法的人</li></ol>
+<p><b>SWOT分析</b>你的优势/劣势/机会/威胁→制定Q3-Q4具体行动计划。</p>
+<p>🎉 <b>统计12周产出</b>：写了多少行代码？训练了多少模型？发表了几个GitHub项目？给自己一个大大的奖励——坚持84天高强度学习不容易！</p></div>
+
+<div style="margin-top:48px;padding:24px;background:linear-gradient(135deg,rgba(45,212,191,.1),rgba(167,139,250,.1));border:1px solid #2dd4bf;border-radius:16px;text-align:center">
+  <h2 style="color:#2dd4bf">🏁 12周完整学习路线完成！</h2>
+  <p style="color:#8b949e">Python → Pandas → RDKit → ChEMBL → ML → ADMET → PyTorch → GNN → 分子生成 → DeepChem → AlphaFold → 3个实战项目 → 求职准备</p>
+  <p style="color:#a78bfa;font-weight:700">🎯 你是少有的"制药工程+AI"复合背景人才——这个组合在市场上非常稀缺</p>
+</div>
+</body></html>

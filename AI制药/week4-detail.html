@@ -1,0 +1,143 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>第4周·详细教程</title>
+<style>body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;background:#0d1117;color:#e6edf3;max-width:900px;margin:0 auto;padding:20px;line-height:1.8}h1{color:#2dd4bf;border-bottom:2px solid #30363d;padding-bottom:10px}h2{color:#a78bfa;margin-top:36px}h3{color:#60a5fa}.step{background:#161b22;border:1px solid #30363d;border-radius:10px;padding:16px 20px;margin:12px 0}.step h4{color:#2dd4bf;margin:0 0 8px}.step p,.step li{margin:6px 0;color:#8b949e;font-size:.9rem}pre{background:#0a0e15;border:1px solid #30363d;border-radius:8px;padding:12px 16px;overflow-x:auto;font-size:.82rem;line-height:1.6}code{font-family:"Cascadia Code","Fira Code",monospace;font-size:.82rem}.c1{color:#2dd4bf}.c2{color:#6a9955}.c3{color:#fbbf24}.note{background:rgba(251,191,36,.1);border-left:3px solid #fbbf24;padding:10px 14px;margin:10px 0;border-radius:0 8px 8px 0;font-size:.85rem}.check{background:rgba(74,222,128,.08);border-left:3px solid #4ade80;padding:10px 14px;margin:10px 0;border-radius:0 8px 8px 0;font-size:.85rem}.warn{background:rgba(248,113,113,.08);border-left:3px solid #f87171;padding:10px 14px;margin:10px 0;border-radius:0 8px 8px 0;font-size:.85rem}</style></head><body>
+<h1>🧪 第4周：ADMET 预测实战项目 — 详细教程</h1>
+<p style="color:#8b949e">⏱️ 每天 1.5-2小时 · 共 7 天</p>
+<p style="color:#8b949e">🎯 本周目标：完成你第一个 AI 制药 Portfolio 项目——ADMET 预测。此项目写入简历。</p>
+
+<h2>Day 1：ADMET 全景 + TDC 数据加载</h2>
+<p style="color:#8b949e">⏱️ 1.5小时 · 🎯 深入理解 ADMET 每个维度，安装 TDC 加载标准数据集</p>
+
+<div class="step"><h4>ADMET 为什么重要？</h4>
+<p><b>约40%的临床失败来自ADMET问题</b>——不是药没用，而是吸收不了/代谢太快/有毒。所以 Pharma 在临床前就要预测 ADMET。</p>
+<table><tr><th>字母</th><th>含义</th><th>关键指标</th><th>TDC数据集</th></tr>
+<tr><td><b>A</b>bsorption</td><td>吸收：药能进血液吗？</td><td>Caco-2渗透性、PAMPA</td><td>Caco2_Wang</td></tr>
+<tr><td><b>D</b>istribution</td><td>分布：药去了哪些器官？</td><td>血浆蛋白结合(PPB)、BBB穿透</td><td>BBB_Martins</td></tr>
+<tr><td><b>M</b>etabolism</td><td>代谢：被哪个CYP酶分解？</td><td>CYP3A4/2D6/2C9</td><td>CYP_P450</td></tr>
+<tr><td><b>E</b>xcretion</td><td>排泄：多快排出体外？</td><td>清除率(CL)、半衰期(t₁/₂)</td><td>Half_Life</td></tr>
+<tr><td><b>T</b>oxicity</td><td>毒性：有毒吗？（头号杀手）</td><td>hERG心脏毒性、AMES遗传毒性、DILI肝毒性</td><td>herg_central</td></tr></table>
+</div>
+
+<div class="step"><h4>安装并加载 TDC</h4>
+<pre><code><span class="c1">pip install PyTDC</span>
+
+<span class="c1">from</span> tdc.single_pred <span class="c1">import</span> ADME, Tox
+
+<span class="c2"># 加载5个代表性数据集</span>
+datasets = {
+    <span class="c3">'溶解度'</span>: ADME(name=<span class="c3">'Solubility_AqSolDB'</span>),
+    <span class="c3">'BBB穿透'</span>: ADME(name=<span class="c3">'BBB_Martins'</span>),
+    <span class="c3">'Caco2渗透'</span>: ADME(name=<span class="c3">'Caco2_Wang'</span>),
+    <span class="c3">'hERG毒性'</span>: Tox(name=<span class="c3">'herg_central'</span>),
+    <span class="c3">'AMES毒性'</span>: Tox(name=<span class="c3">'AMES'</span>),
+}
+<span class="c1">for</span> name, data <span class="c1">in</span> datasets.items():
+    df = data.get_data()
+    <span class="c1">print</span>(<span class="c3">f"{name}: {df.shape[0]}条数据, 列:{df.columns.tolist()}"</span>)
+    <span class="c1">print</span>(<span class="c3">f"  Y值范围: {df['Y'].min():.2f} ~ {df['Y'].max():.2f}"</span>)</code></pre>
+<div class="note">💡 TDC 的 data.get_data() 返回 DataFrame。Drug 列 = SMILES，Y 列 = 目标值。部分数据集还有辅助列（如分类数据集的 Y=0/1）。</div>
+</div>
+
+<div class="check">✅ <b>验收：</b>成功加载5个ADMET数据集，理解每个数据集的Y列含义</div>
+
+<h2>Day 2：特征工程深度——从分子到高质量特征矩阵</h2>
+<p style="color:#8b949e">⏱️ 2小时 · 🎯 提取描述符+指纹，做特征筛选，保存高质量特征矩阵</p>
+
+<div class="step"><h4>构建特征提取函数</h4>
+<pre><code><span class="c1">from</span> rdkit <span class="c1">import</span> Chem
+<span class="c1">from</span> rdkit.Chem <span class="c1">import</span> Descriptors, AllChem
+<span class="c1">import</span> numpy <span class="c1">as</span> np
+
+<span class="c1">def</span> <span class="c4">featurize_smiles</span>(smiles_list):
+    <span class="c3">"""输入SMILES列表→输出描述符+指纹特征矩阵"""</span>
+    desc_names = [n <span class="c1">for</span> n,_ <span class="c1">in</span> Descriptors._descList]
+    all_feats = []
+    valid_idx = []
+    <span class="c1">for</span> i, smi <span class="c1">in</span> <span class="c1">enumerate</span>(smiles_list):
+        mol = Chem.MolFromSmiles(smi)
+        <span class="c1">if</span> mol <span class="c1">is</span> <span class="c1">None</span>: <span class="c1">continue</span>
+        <span class="c2"># 描述符</span>
+        descs = [<span class="c1">getattr</span>(Descriptors, n)(mol) <span class="c1">for</span> n <span class="c1">in</span> desc_names]
+        <span class="c2"># 指纹(ECFP4)</span>
+        fp = AllChem.GetMorganFingerprintAsBitVect(mol, 2, 1024)
+        fp_bits = [<span class="c1">int</span>(b) <span class="c1">for</span> b <span class="c1">in</span> fp]
+        all_feats.append(descs + fp_bits)
+        valid_idx.append(i)
+    <span class="c1">return</span> np.array(all_feats), valid_idx
+
+<span class="c2"># 使用</span>
+X, valid = featurize_smiles(df[<span class="c3">'Drug'</span>].tolist())
+y = df[<span class="c3">'Y'</span>].values[valid]
+<span class="c1">print</span>(<span class="c3">f"特征矩阵: {X.shape} (样本数×特征数)"</span>)</code></pre>
+</div>
+
+<div class="step"><h4>特征筛选三步走</h4>
+<pre><code><span class="c1">from</span> sklearn.feature_selection <span class="c1">import</span> VarianceThreshold
+<span class="c2"># Step1: 去低方差</span>
+sel = VarianceThreshold(threshold=0.01)
+X1 = sel.fit_transform(X)
+<span class="c2"># Step2: 去高相关（>0.95的只保留一个）</span>
+corr = np.corrcoef(X1, rowvar=<span class="c1">False</span>)
+high_corr = np.where(np.triu(np.abs(corr)>0.95, k=1))
+<span class="c2"># Step3: PCA看活性高低分子是否自然分开</span>
+<span class="c1">from</span> sklearn.decomposition <span class="c1">import</span> PCA
+<span class="c1">import</span> matplotlib.pyplot <span class="c1">as</span> plt
+x_pca = PCA(n_components=2).fit_transform(StandardScaler().fit_transform(X1))
+plt.scatter(x_pca[:,0], x_pca[:,1], c=y, alpha=0.5, cmap=<span class="c3">'coolwarm'</span>)</code></pre>
+</div>
+<div class="check">✅ <b>验收：</b>特征提取脚本函数化，能跑特征筛选三步</div>
+
+<h2>Day 3：溶解度预测——第一个完整的 ML 回归项目</h2>
+<p style="color:#8b949e">⏱️ 2小时 · 🎯 从数据到模型到评估，完整走一遍回归预测</p>
+
+<div class="step"><h4>完整流程</h4>
+<ol><li><b>数据准备</b>：TDC Solubility → 特征提取 → train/test</li><li><b>多模型对比</b>：Ridge/Lasso/RF/XGBoost → 记录R²/RMSE/MAE</li><li><b>最优模型</b>：GridSearchCV调参 → 5折CV评估</li><li><b>误差分析</b>：预测值vs真实值散点图 + 误差最大分子的结构特征分析</li><li><b>保存</b>：joblib.dump(model, 'solubility_model.pkl')</li></ol>
+</div>
+<pre><code><span class="c1">import</span> joblib; joblib.dump(best_model, <span class="c3">'solubility_model.pkl'</span>)
+<span class="c2"># 后续加载：model = joblib.load('solubility_model.pkl')</span></code></pre>
+<div class="check">✅ <b>验收：</b>R² > 0.7 即合格，保留预测vs真实散点图</div>
+
+<h2>Day 4：hERG 心脏毒性预测——分类 + 不平衡处理</h2>
+<p style="color:#8b949e">⏱️ 2小时 · 🎯 掌握分类任务全流程，重点处理类别不平衡</p>
+
+<div class="step"><h4>hERG 为什么是药物安全第一关？</h4>
+<p>hERG 钾离子通道被阻断 → QT间期延长 → 尖端扭转型室速 → 猝死。特非那定、西沙必利等药物因此被撤回。FDA 要求所有新药必须评估 hERG 风险。</p>
+</div>
+
+<div class="step"><h4>类别不平衡处理（安全性预测的核心挑战）</h4>
+<pre><code><span class="c2"># 大多数ADMET毒性数据集有毒分子只占5-15%→极度不平衡</span>
+<span class="c1">from</span> imblearn.over_sampling <span class="c1">import</span> SMOTE
+<span class="c1">from</span> sklearn.utils.class_weight <span class="c1">import</span> compute_class_weight
+
+<span class="c2"># 方法1: SMOTE过采样——合成少数类样本（只对训练集！）</span>
+smote = SMOTE(random_state=42)
+X_resampled, y_resampled = smote.fit_resample(X_train, y_train)
+
+<span class="c2"># 方法2: class_weight——让模型更关注少数类</span>
+weights = compute_class_weight(<span class="c3">'balanced'</span>, classes=[0,1], y=y_train)
+model = RandomForestClassifier(class_weight={0:weights[0], 1:weights[1]})
+
+<span class="c2"># 评估重点：Recall（宁可误报也别漏掉有毒分子！）</span>
+<span class="c1">from</span> sklearn.metrics <span class="c1">import</span> recall_score
+<span class="c1">print</span>(<span class="c3">f"Recall(有毒类): {recall_score(y_test, y_pred, pos_label=1):.3f}"</span>)</code></pre>
+</div>
+<div class="warn">⚠️ SMOTE 只对<b>训练集</b>做！测试集保持原始分布。SMOTE 生成的"虚拟样本"可能不化学合理，后续可用 GAN 等方法改进。</div>
+
+<div class="check">✅ <b>验收：</b>分类模型 Recall > 0.8 合格，能解释为什么安全性预测看重 Recall 而非 Precision</div>
+
+<h2>Day 5-6：SHAP 可解释性 + 多任务学习</h2>
+<pre><code><span class="c2"># pip install shap</span>
+<span class="c1">import</span> shap
+explainer = shap.TreeExplainer(model)
+shap_values = explainer.shap_values(X_test)
+shap.summary_plot(shap_values, X_test, feature_names=feature_names)</code></pre>
+<p>SHAP 可解释性是 AI 制药的关键——你能告诉药化人员"为什么模型认为这个分子有毒性"，这比"预测准确率95%"有价值得多。</p>
+
+<h2>Day 7：🏆 ADMET 项目发布</h2>
+<div class="step"><h4>发布清单</h4>
+<ol><li>代码整理：data/ models/ notebooks/ app/ reports/</li><li>项目报告 ≥2000字：背景→数据→方法→结果→讨论→局限</li><li><b>Streamlit Demo</b>：输入SMILES→输出ADMET雷达图（pip install streamlit）</li><li>部署到 Streamlit Cloud（免费），获得公开链接</li><li>GitHub Release v1.0</li><li>这个项目就是你简历里的<b>第一个 AI 制药作品</b>！</li></ol>
+</div>
+
+<div style="margin-top:40px;padding-top:20px;border-top:1px solid #30363d;text-align:center;color:#8b949e">
+  <p>🏁 第4周（ADMET预测实战项目）完成 · 约4000字</p>
+</div>
+</body></html>

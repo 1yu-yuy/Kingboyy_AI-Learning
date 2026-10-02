@@ -1,0 +1,47 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>第8周·详细教程</title>
+<style>body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;background:#0d1117;color:#e6edf3;max-width:900px;margin:0 auto;padding:20px;line-height:1.8}h1{color:#2dd4bf}h2{color:#a78bfa;margin-top:36px}h3{color:#60a5fa}.step{background:#161b22;border:1px solid #30363d;border-radius:10px;padding:16px 20px;margin:12px 0}.step h4{color:#2dd4bf;margin:0 0 8px}.step p,.step li{margin:6px 0;color:#8b949e;font-size:.9rem}pre{background:#0a0e15;border:1px solid #30363d;border-radius:8px;padding:12px 16px;overflow-x:auto;font-size:.82rem;line-height:1.6}code{font-family:"Cascadia Code","Fira Code",monospace;font-size:.82rem}.c1{color:#2dd4bf}.c2{color:#6a9955}.c3{color:#fbbf24}.check{background:rgba(74,222,128,.08);border-left:3px solid #4ade80;padding:10px 14px;margin:10px 0;border-radius:0 8px 8px 0}</style></head><body>
+<h1>🧰 第8周：预训练模型 + AI制药工具链整合</h1>
+<p style="color:#8b949e">⏱️ 每天 1.5-2小时 · 共 7 天</p>
+<p style="color:#8b949e">🎯 掌握 DeepChem/ChemBERTa/AlphaFold/DiffDock，构建完整 AI 制药工具箱</p>
+
+<h2>Day 1：DeepChem——AI制药的一站式框架</h2>
+<div class="step"><h4>5行代码训练ADMET模型</h4>
+<pre><code><span class="c1">import</span> deepchem <span class="c1">as</span> dc
+<span class="c2"># 1. 加载数据</span>
+tasks, datasets, transformers = dc.molnet.load_tox21(featurizer=<span class="c3">'ECFP'</span>)
+train, valid, test = datasets
+<span class="c2"># 2. 创建模型</span>
+model = dc.models.MultitaskClassifier(n_tasks=<span class="c1">len</span>(tasks), n_features=1024, layer_sizes=[1000])
+<span class="c2"># 3. 训练</span>
+model.fit(train, nb_epoch=10)
+<span class="c2"># 4. 评估</span>
+<span class="c1">print</span>(model.evaluate(test, transformers))</code></pre></div>
+
+<h2>Day 2：ChemBERTa微调——分子版BERT</h2>
+<pre><code><span class="c1">from</span> transformers <span class="c1">import</span> AutoTokenizer, AutoModelForSequenceClassification
+model = AutoModelForSequenceClassification.from_pretrained(<span class="c3">"DeepChem/ChemBERTa-77M-MLM"</span>)
+<span class="c2"># 在下游任务(BBBP/毒性分类)上微调</span></code></pre>
+
+<h2>Day 3：AlphaFold——蛋白质结构预测革命</h2>
+<p>AlphaFold 核心思想：MSA(多序列比对)提取进化信息 + Structure Module(IPA注意力)迭代优化3D坐标。</p>
+<p><b>你不用训练AlphaFold</b>——直接去 <b>alphafold.ebi.ac.uk</b> 下载预测好的蛋白结构PDB文件。用PyMOL/NGLview可视化→找到结合口袋→为分子对接做准备。</p>
+
+<h2>Day 4：ESMFold + DiffDock——AI分子对接</h2>
+<ul><li><b>ESMFold</b>：Meta的轻量蛋白预测，适合小蛋白快速预测</li><li><b>DiffDock</b>：基于扩散模型的盲对接(不需预定义结合口袋)，输入蛋白+分子→预测最佳结合位姿</li></ul>
+<pre><code><span class="c2"># DiffDock使用示例</span>
+<span class="c2"># 输入: protein.pdb + ligand.sdf</span>
+<span class="c2"># 输出: 预测的对接位姿 + 置信度评分</span></code></pre>
+
+<h2>Day 5：RDKit高级功能 + 化学反应处理</h2>
+<ul><li><b>构象生成和聚类</b>：ETKDG→构象聚类→选最低能量</li><li><b>SMARTS反应枚举</b>：定义反应规则→RunReactants→枚举所有可能产物</li><li><b>药效团(Pharmacophore)</b>：关键相互作用特征的3D排列→在分子中搜索匹配</li></ul>
+
+<h2>Day 6：工具链整合——端到端AI药物发现流程</h2>
+<p>设计完整流程：<b>靶点蛋白(AlphaFold)→结合口袋识别→分子生成(SMILES LSTM/VAE)→ADMET过滤(DeepChem/GNN)→分子对接(DiffDock)→排序→候选分子列表</b></p>
+
+<h2>Day 7：🏆 阶段三里程碑 + 中期总结</h2>
+<ul><li>整理第5-8周所有代码到GitHub</li><li>写中期博客：从ML到DL到GNN到分子生成——我学到了什么</li><li>更新LinkedIn/脉脉个人资料，添加AI制药项目</li></ul>
+
+<div style="margin-top:40px;padding-top:20px;border-top:1px solid #30363d;text-align:center;color:#8b949e">
+  <p>🏁 第8周（预训练模型+工具链）完成</p>
+</div>
+</body></html>

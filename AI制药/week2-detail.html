@@ -1,0 +1,397 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>第2周·详细教程</title>
+<style>body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;background:#0d1117;color:#e6edf3;max-width:900px;margin:0 auto;padding:20px;line-height:1.8}h1{color:#2dd4bf;border-bottom:2px solid #30363d;padding-bottom:10px}h2{color:#a78bfa;margin-top:36px}h3{color:#60a5fa;margin-top:24px}.step{background:#161b22;border:1px solid #30363d;border-radius:10px;padding:16px 20px;margin:12px 0}.step h4{color:#2dd4bf;margin:0 0 8px}.step p,.step li{margin:6px 0;color:#8b949e;font-size:.9rem}.step ul,.step ol{padding-left:20px}pre{background:#0a0e15;border:1px solid #30363d;border-radius:8px;padding:12px 16px;overflow-x:auto;font-size:.82rem;line-height:1.6}code{font-family:"Cascadia Code","Fira Code",monospace;font-size:.82rem}.c1{color:#2dd4bf}.c2{color:#6a9955}.c3{color:#fbbf24}.c4{color:#f472b6}.note{background:rgba(251,191,36,.1);border-left:3px solid #fbbf24;padding:10px 14px;margin:10px 0;border-radius:0 8px 8px 0;font-size:.85rem}.check{background:rgba(74,222,128,.08);border-left:3px solid #4ade80;padding:10px 14px;margin:10px 0;border-radius:0 8px 8px 0;font-size:.85rem}.warn{background:rgba(248,113,113,.08);border-left:3px solid #f87171;padding:10px 14px;margin:10px 0;border-radius:0 8px 8px 0;font-size:.85rem}.tag{display:inline-block;padding:2px 10px;border-radius:12px;font-size:.7rem;margin:2px;background:rgba(139,148,158,.15);color:#8b949e}</style></head><body>
+<h1>💊 第2周：制药数据 + 化学信息学 — 详细教程</h1>
+<p style="color:#8b949e">⏱️ 每天 1-2 小时 · 共 7 天 · 第 7 天为复习日</p>
+<p style="color:#8b949e">🎯 本周目标：学会用 RDKit 处理分子、算描述符和指纹、从 ChEMBL 获取真实药物数据、理解 GMP 合规要求</p>
+
+<!-- DAY 1 -->
+<h2>Day 1：RDKit 入门——在Python里读分子、画分子</h2>
+<p style="color:#8b949e">⏱️ 1.5小时 · 🎯 安装RDKit，理解SMILES，能画分子结构图</p>
+
+<h3>什么是 RDKit？</h3>
+<p>RDKit 是化学信息学领域最流行的开源工具包。它可以：读分子（从SMILES/SDF/MOL）→ 算描述符（200+种）→ 画结构图 → 做分子指纹 → 化学反应处理 → 构象分析。几乎所有 AI 制药项目的分子预处理都离不开它。</p>
+
+<div class="step"><h4>第1步：安装 RDKit</h4>
+<p><b>方法A（推荐）：conda 安装</b></p>
+<pre><code><span class="c2"># 在 Anaconda Prompt 的 ai-pharma 环境下</span>
+<span class="c1">conda install -c conda-forge rdkit -y</span></code></pre>
+<p><b>方法B（备选）：pip 安装</b>（如果 conda 太慢或报错）</p>
+<pre><code><span class="c1">pip install rdkit-pypi</span></code></pre>
+<p>验证安装：</p>
+<pre><code><span class="c1">from</span> rdkit <span class="c1">import</span> Chem
+<span class="c1">from</span> rdkit.Chem <span class="c1">import</span> Draw
+<span class="c1">print</span>(<span class="c3">"RDKit 版本:"</span>, Chem.rdkitVersion)
+<span class="c1">print</span>(<span class="c3">"✅ 安装成功！"</span>)</code></pre>
+<div class="warn">⚠️ conda 安装卡住→换 pip install rdkit-pypi。注意 rdkit-pypi 和 rdkit 是同一个东西的不同分发方式。</div>
+</div>
+
+<div class="step"><h4>第2步：理解 SMILES——分子的"字符串身份证"</h4>
+<p>SMILES（Simplified Molecular Input Line Entry System）是把分子结构写成一行字符串的方法。每个分子有唯一的 SMILES（规范化的）。</p>
+<pre><code><span class="c2"># 几个常见药物的 SMILES</span>
+aspirin   = <span class="c3">'CC(=O)Oc1ccccc1C(=O)O'</span>   <span class="c2"># 阿司匹林</span>
+ibuprofen = <span class="c3">'CC(C)Cc1ccc(C(C)C(=O)O)cc1'</span> <span class="c2"># 布洛芬</span>
+caffeine  = <span class="c3">'CN1C=NC2=C1C(=O)N(C(=O)N2C)C'</span> <span class="c2"># 咖啡因</span>
+paracetamol = <span class="c3">'CC(=O)Nc1ccc(O)cc1'</span>      <span class="c2"># 对乙酰氨基酚（扑热息痛）</span></code></pre>
+<p>去哪找 SMILES？→ <b>pubchem.ncbi.nlm.nih.gov</b>，搜索药名，页面上就有 Canonical SMILES。</p>
+<div class="note">💡 <b>SMILES 语法速成</b>：大写字母=原子(C/N/O)；小写字母=芳香环中的原子(c/n/o)；= 双键；# 三键；() 分支；数字=开环/闭环标记。如 c1ccccc1=苯环。</div>
+</div>
+
+<div class="step"><h4>第3步：从 SMILES 创建分子对象，算基本信息</h4>
+<pre><code><span class="c1">from</span> rdkit <span class="c1">import</span> Chem
+<span class="c1">from</span> rdkit.Chem <span class="c1">import</span> Descriptors
+
+<span class="c2"># 创建分子对象</span>
+mol = Chem.MolFromSmiles(<span class="c3">'CC(=O)Oc1ccccc1C(=O)O'</span>)
+<span class="c2"># 如果SMILES不合法，mol会是None——一定要检查！</span>
+<span class="c1">if</span> mol <span class="c1">is</span> <span class="c1">None</span>:
+    <span class="c1">print</span>(<span class="c3">"❌ SMILES不合法"</span>)
+<span class="c1">else</span>:
+    <span class="c1">print</span>(<span class="c3">"✅ 分子创建成功"</span>)
+    <span class="c1">print</span>(<span class="c3">f"分子量: {Descriptors.MolWt(mol):.2f} g/mol"</span>)
+    <span class="c1">print</span>(<span class="c3">f"LogP: {Descriptors.MolLogP(mol):.2f}"</span>)
+    <span class="c1">print</span>(<span class="c3">f"分子式: {Chem.rdMolDescriptors.CalcMolFormula(mol)}"</span>)
+    <span class="c1">print</span>(<span class="c3">f"氢键供体数: {Descriptors.NumHDonors(mol)}"</span>)
+    <span class="c1">print</span>(<span class="c3">f"氢键受体数: {Descriptors.NumHAcceptors(mol)}"</span>)
+    <span class="c1">print</span>(<span class="c3">f"可旋转键数: {Descriptors.NumRotatableBonds(mol)}"</span>)
+    <span class="c1">print</span>(<span class="c3">f"TPSA: {Descriptors.TPSA(mol):.1f} Å²"</span>)
+    <span class="c1">print</span>(<span class="c3">f"重原子数: {mol.GetNumHeavyAtoms()}"</span>)</code></pre>
+<div class="check">✅ <b>验收：</b>能输出分子量180.16（阿司匹林）、LogP约1.2、分子式C9H8O4</div>
+</div>
+
+<div class="step"><h4>第4步：在 Jupyter 里画分子结构</h4>
+<pre><code><span class="c1">from</span> rdkit.Chem <span class="c1">import</span> Draw
+
+<span class="c2"># 画单个分子</span>
+mol = Chem.MolFromSmiles(<span class="c3">'CC(=O)Oc1ccccc1C(=O)O'</span>)
+img = Draw.MolToImage(mol, size=(400, 250))
+img  <span class="c2"># Jupyter 里直接显示图片</span>
+
+<span class="c2"># 画一排分子（超好用！）</span>
+smiles_list = [
+    <span class="c3">'CC(=O)Oc1ccccc1C(=O)O'</span>,   <span class="c2"># 阿司匹林</span>
+    <span class="c3">'CC(C)Cc1ccc(C(C)C(=O)O)cc1'</span>, <span class="c2"># 布洛芬</span>
+    <span class="c3">'CC(=O)Nc1ccc(O)cc1'</span>,       <span class="c2"># 扑热息痛</span>
+    <span class="c3">'CN1C=NC2=C1C(=O)N(C(=O)N2C)C'</span> <span class="c2"># 咖啡因</span>
+]
+mols = [Chem.MolFromSmiles(s) <span class="c1">for</span> s <span class="c1">in</span> smiles_list]
+Draw.MolsToGridImage(mols, molsPerRow=4, subImgSize=(200, 150),
+                     legends=[<span class="c3">'阿司匹林'</span>,<span class="c3">'布洛芬'</span>,<span class="c3">'扑热息痛'</span>,<span class="c3">'咖啡因'</span>])</code></pre>
+</div>
+
+<div class="step"><h4>第5步：读 SDF 文件（含多分子的标准格式）</h4>
+<pre><code><span class="c2"># SDF 是制药行业常用的分子文件格式，一个文件可以包含很多分子+实验数据</span>
+suppl = Chem.SDMolSupplier(<span class="c3">'molecules.sdf'</span>)
+<span class="c1">for</span> i, mol <span class="c1">in</span> <span class="c1">enumerate</span>(suppl):
+    <span class="c1">if</span> mol <span class="c1">is</span> <span class="c1">not</span> <span class="c1">None</span>:
+        <span class="c1">print</span>(<span class="c3">f"分子{i}: {Chem.MolToSmiles(mol)}"</span>)
+        <span class="c1">print</span>(<span class="c3">f"  分子量: {Descriptors.MolWt(mol):.1f}"</span>)</code></pre>
+</div>
+
+<div class="step"><h4>第6步：练习——找3个你熟悉的药</h4>
+<ol><li>去 pubchem.ncbi.nlm.nih.gov 搜索你熟悉的3个药物</li><li>复制它们的 Canonical SMILES</li><li>在 Jupyter 里：创建分子 → 打印分子量和分子式 → 画出结构图</li><li>用 Draw.MolsToGridImage 把3个药画在一起</li></ol>
+</div>
+<div class="check">✅ <b>今日验收：</b>RDKit 不报错，能画分子图，理解 SMILES，能把 SMILES 转成分子对象</div>
+
+<!-- DAY 2 -->
+<h2>Day 2：分子描述符 + 分子指纹——把分子变成数字</h2>
+<p style="color:#8b949e">⏱️ 1.5小时 · 🎯 从分子提取 200+ 描述符和 ECFP4 指纹，理解 Tanimoto 相似度</p>
+
+<h3>为什么要把分子变成数字？</h3>
+<p>机器学习模型只认识数字。分子→描述符/指纹=把化学结构转成特征向量→ML模型才能"看懂"分子。</p>
+
+<div class="step"><h4>第1步：单描述符计算——理解每个指标的化学含义</h4>
+<pre><code><span class="c1">from</span> rdkit <span class="c1">import</span> Chem
+<span class="c1">from</span> rdkit.Chem <span class="c1">import</span> Descriptors
+
+mol = Chem.MolFromSmiles(<span class="c3">'CC(=O)Oc1ccccc1C(=O)O'</span>)  <span class="c2"># 阿司匹林</span>
+
+<span class="c2"># 最常用的6个描述符（药物化学必看）</span>
+<span class="c1">print</span>(<span class="c3">f"分子量 MolWt: {Descriptors.MolWt(mol):.1f} g/mol"</span>)
+<span class="c1">print</span>(<span class="c3">f"脂水分配系数 MolLogP: {Descriptors.MolLogP(mol):.2f}"</span>)
+<span class="c1">print</span>(<span class="c3">f"氢键供体数 NumHDonors: {Descriptors.NumHDonors(mol)}"</span>)
+<span class="c1">print</span>(<span class="c3">f"氢键受体数 NumHAcceptors: {Descriptors.NumHAcceptors(mol)}"</span>)
+<span class="c1">print</span>(<span class="c3">f"可旋转键数 NumRotatableBonds: {Descriptors.NumRotatableBonds(mol)}"</span>)
+<span class="c1">print</span>(<span class="c3">f"拓扑极性表面积 TPSA: {Descriptors.TPSA(mol):.1f} Å²"</span>)
+
+<span class="c2"># Lipinski 五规则检查——判断分子是否"像药"</span>
+mw = Descriptors.MolWt(mol)
+logp = Descriptors.MolLogP(mol)
+hbd = Descriptors.NumHDonors(mol)
+hba = Descriptors.NumHAcceptors(mol)
+violations = <span class="c1">sum</span>([mw > 500, logp > 5, hbd > 5, hba > 10])
+<span class="c1">print</span>(<span class="c3">f"\nLipinski违规数: {violations}（≤1为类药分子）"</span>)</code></pre>
+<div class="note">💡 <b>Lipinski 五规则（Rule of 5）</b>：口服药物通常满足 MW<500, LogP<5, HBD<5, HBA<10。违反≤1条=类药性好。这是药物化学最经典的规则之一。</div>
+</div>
+
+<div class="step"><h4>第2步：批量计算 200+ 个描述符</h4>
+<pre><code><span class="c1">from</span> rdkit.Chem <span class="c1">import</span> Descriptors
+
+<span class="c2"># 获取所有可用描述符的名字</span>
+desc_names = [name <span class="c1">for</span> name, func <span class="c1">in</span> Descriptors._descList]
+<span class="c1">print</span>(<span class="c3">f"共 {len(desc_names)} 个描述符可用"</span>)  <span class="c2"># 约210个</span>
+
+<span class="c2"># 对单个分子计算所有描述符</span>
+<span class="c1">def</span> <span class="c4">calc_all_descriptors</span>(mol):
+    <span class="c3">"""返回所有描述符的列表"""</span>
+    descs = []
+    <span class="c1">for</span> name <span class="c1">in</span> desc_names:
+        <span class="c1">try</span>:
+            val = <span class="c1">getattr</span>(Descriptors, name)(mol)
+            descs.append(val)
+        <span class="c1">except</span>:
+            descs.append(<span class="c1">None</span>)  <span class="c2"># 有些描述符对特定分子无法计算</span>
+    <span class="c1">return</span> descs
+
+mol = Chem.MolFromSmiles(<span class="c3">'CC(=O)Oc1ccccc1C(=O)O'</span>)
+desc_values = calc_all_descriptors(mol)
+<span class="c1">print</span>(<span class="c3">f"计算了 {len(desc_values)} 个描述符"</span>)
+<span class="c1">print</span>(<span class="c3">f"其中 {desc_values.count(None)} 个无法计算"</span>)</code></pre>
+</div>
+
+<div class="step"><h4>第3步：分子指纹 ECFP4（最核心的概念）</h4>
+<p>分子指纹 = 把分子的子结构编码成固定长度的二进制向量。ECFP4（Extended-Connectivity Fingerprints, diameter 4）是最常用的。</p>
+<pre><code><span class="c1">from</span> rdkit.Chem <span class="c1">import</span> AllChem
+<span class="c1">from</span> rdkit <span class="c1">import</span> DataStructs
+
+mol = Chem.MolFromSmiles(<span class="c3">'CC(=O)Oc1ccccc1C(=O)O'</span>)
+
+<span class="c2"># 生成 Morgan 指纹（= ECFP）</span>
+<span class="c2"># radius=2 → 直径4 → ECFP4</span>
+<span class="c2"># nBits=1024 → 1024位二进制向量</span>
+fp = AllChem.GetMorganFingerprintAsBitVect(mol, radius=2, nBits=1024)
+<span class="c1">print</span>(<span class="c3">f"指纹长度: {len(fp)} 位"</span>)
+<span class="c1">print</span>(<span class="c3">f"其中为1的位数: {sum(fp)}"</span>)  <span class="c2"># 通常占总位数的5-15%</span>
+<span class="c1">print</span>(<span class="c3">f"前20位: {fp.ToBitString()[:50]}..."</span>)
+
+<span class="c2"># 也可以用 MACCS 指纹（167位，基于预定义的子结构键）</span>
+<span class="c1">from</span> rdkit.Chem <span class="c1">import</span> MACCSkeys
+maccs = MACCSkeys.GenMACCSKeys(mol)
+<span class="c1">print</span>(<span class="c3">f"\nMACCS指纹: {len(maccs)} 位, {sum(maccs)} 个为1"</span>)</code></pre>
+<div class="note">💡 <b>ECFP4 vs MACCS</b>：ECFP4 基于圆形邻域（通用，适合ML），MACCS 基于预定义的 166 个子结构（可解释性强）。大多数 ML 项目用 ECFP4。</div>
+</div>
+
+<div class="step"><h4>第4步：Tanimoto 相似度——两个分子有多像？</h4>
+<pre><code><span class="c2"># 比较阿司匹林 vs 布洛芬的相似度</span>
+mol1 = Chem.MolFromSmiles(<span class="c3">'CC(=O)Oc1ccccc1C(=O)O'</span>)   <span class="c2"># 阿司匹林</span>
+mol2 = Chem.MolFromSmiles(<span class="c3">'CC(C)Cc1ccc(C(C)C(=O)O)cc1'</span>) <span class="c2"># 布洛芬</span>
+mol3 = Chem.MolFromSmiles(<span class="c3">'CC(=O)Nc1ccc(O)cc1'</span>)       <span class="c2"># 扑热息痛</span>
+
+fp1 = AllChem.GetMorganFingerprintAsBitVect(mol1, 2, 1024)
+fp2 = AllChem.GetMorganFingerprintAsBitVect(mol2, 2, 1024)
+fp3 = AllChem.GetMorganFingerprintAsBitVect(mol3, 2, 1024)
+
+sim_12 = DataStructs.TanimotoSimilarity(fp1, fp2)
+sim_13 = DataStructs.TanimotoSimilarity(fp1, fp3)
+sim_23 = DataStructs.TanimotoSimilarity(fp2, fp3)
+
+<span class="c1">print</span>(<span class="c3">f"阿司匹林 vs 布洛芬:   {sim_12:.3f}"</span>)  <span class="c2"># 预计0.1-0.3</span>
+<span class="c1">print</span>(<span class="c3">f"阿司匹林 vs 扑热息痛: {sim_13:.3f}"</span>)  <span class="c2"># 预计0.2-0.4</span>
+<span class="c1">print</span>(<span class="c3">f"布洛芬 vs 扑热息痛:   {sim_23:.3f}"</span>)
+
+<span class="c2"># Tanimoto 取值 0（完全不相似）到 1（完全相同）</span>
+<span class="c2"># 同类药物通常 >0.3，骨架相似的 >0.5</span></code></pre>
+</div>
+
+<div class="step"><h4>第5步：练习——5个药物的描述符矩阵 + 相似度矩阵</h4>
+<pre><code><span class="c2"># 选5个药物，构建描述符矩阵和相似度矩阵</span>
+drugs_smiles = {
+    <span class="c3">'阿司匹林'</span>: <span class="c3">'CC(=O)Oc1ccccc1C(=O)O'</span>,
+    <span class="c3">'布洛芬'</span>: <span class="c3">'CC(C)Cc1ccc(C(C)C(=O)O)cc1'</span>,
+    <span class="c3">'扑热息痛'</span>: <span class="c3">'CC(=O)Nc1ccc(O)cc1'</span>,
+    <span class="c3">'咖啡因'</span>: <span class="c3">'CN1C=NC2=C1C(=O)N(C(=O)N2C)C'</span>,
+    <span class="c3">'奥美拉唑'</span>: <span class="c3">'CC1=CN=C(C(=C1OC)C)CSC2=NC3=C(N2)C=C(C=C3)OC'</span>,
+}
+
+mols = {name: Chem.MolFromSmiles(s) <span class="c1">for</span> name, s <span class="c1">in</span> drugs_smiles.items()}
+fps = {name: AllChem.GetMorganFingerprintAsBitVect(m, 2, 1024) <span class="c1">for</span> name, m <span class="c1">in</span> mols.items()}
+
+<span class="c2"># 构建相似度矩阵</span>
+names = <span class="c1">list</span>(drugs_smiles.keys())
+sim_matrix = np.zeros((5, 5))
+<span class="c1">for</span> i <span class="c1">in</span> <span class="c1">range</span>(5):
+    <span class="c1">for</span> j <span class="c1">in</span> <span class="c1">range</span>(5):
+        sim_matrix[i, j] = DataStructs.TanimotoSimilarity(fps[names[i]], fps[names[j]])
+
+<span class="c1">print</span>(<span class="c3">"相似度矩阵:"</span>)
+<span class="c1">print</span>(pd.DataFrame(sim_matrix, index=names, columns=names).round(3))
+
+<span class="c2"># 找最相似的一对（忽略对角线）</span>
+sim_triu = np.triu(sim_matrix, k=1)
+max_idx = np.unravel_index(sim_triu.argmax(), sim_triu.shape)
+<span class="c1">print</span>(<span class="c3">f"\n最相似: {names[max_idx[0]]} vs {names[max_idx[1]]} ({sim_matrix[max_idx]:.3f})"</span>)</code></pre>
+</div>
+<div class="check">✅ <b>今日验收：</b>能算描述符和 ECFP4 指纹，理解 Tanimoto 相似度，能构建相似度矩阵</div>
+
+<!-- DAY 3-7 similar detailed format... -->
+<h2>Day 3：ChEMBL 数据库——获取真实的药物数据</h2>
+<p style="color:#8b949e">⏱️ 1.5小时 · 🎯 用 Python API 从 ChEMBL 获取化合物和活性数据</p>
+
+<div class="step"><h4>第1步：理解 ChEMBL——全球最大的公开药物数据库</h4>
+<p>ChEMBL 由欧洲生物信息学研究所(EBI)维护，收录了数百万化合物的生物活性数据。是 AI 制药研究最常用的数据源。</p>
+<p><b>数据层级：</b>Target(靶点，如 EGFR) → Assay(实验方法) → Activity(活性值：IC50/Ki/Kd/EC50) → Molecule(化合物 + SMILES)</p>
+</div>
+
+<div class="step"><h4>第2步：安装和连接</h4>
+<pre><code><span class="c1">pip install chembl_webresource_client</span>
+
+<span class="c1">from</span> chembl_webresource_client.new_client <span class="c1">import</span> new_client
+
+<span class="c2"># 初始化客户端</span>
+target = new_client.target
+activity = new_client.activity
+molecule = new_client.molecule
+<span class="c1">print</span>(<span class="c3">"✅ ChEMBL 客户端就绪"</span>)</code></pre>
+</div>
+
+<div class="step"><h4>第3步：搜索靶点</h4>
+<pre><code><span class="c2"># 搜索 EGFR（表皮生长因子受体——抗癌药热门靶点）</span>
+results = target.search(<span class="c3">'EGFR'</span>)
+<span class="c1">print</span>(<span class="c3">f"找到 {len(results)} 个相关靶点"</span>)
+<span class="c1">for</span> r <span class="c1">in</span> results[:5]:
+    <span class="c1">print</span>(<span class="c3">f"  {r['target_chembl_id']:20s} {r.get('pref_name','N/A'):30s} {r.get('organism','')}"</span>)
+
+<span class="c2"># 选人类EGFR: CHEMBL203（通常第一个就是）</span>
+target_id = <span class="c3">'CHEMBL203'</span></code></pre>
+</div>
+
+<div class="step"><h4>第4步：获取活性数据——最核心的操作</h4>
+<pre><code><span class="c2"># 获取 IC50 数据（半数抑制浓度——衡量药物效力的标准指标）</span>
+acts = activity.<span class="c1">filter</span>(
+    target_chembl_id=target_id,
+    standard_type=<span class="c3">'IC50'</span>  <span class="c2"># 只取IC50活性值</span>
+).<span class="c1">only</span>([
+    <span class="c3">'molecule_chembl_id'</span>,
+    <span class="c3">'canonical_smiles'</span>,
+    <span class="c3">'standard_value'</span>,
+    <span class="c3">'standard_units'</span>,
+    <span class="c3">'standard_relation'</span>
+])[:500]  <span class="c2"># 限制500条，避免超时</span>
+
+<span class="c1">print</span>(<span class="c3">f"获取了 {len(acts)} 条 IC50 数据"</span>)
+<span class="c1">print</span>(<span class="c3">f"示例: {acts[0]}"</span>)</code></pre>
+</div>
+
+<div class="step"><h4>第5步：转成 DataFrame 并清洗保存</h4>
+<pre><code><span class="c1">import</span> pandas <span class="c1">as</span> pd
+
+df = pd.DataFrame(acts)
+<span class="c1">print</span>(<span class="c3">f"原始数据: {len(df)} 条"</span>)
+
+<span class="c2"># 关键清洗步骤</span>
+df[<span class="c3">'standard_value'</span>] = pd.to_numeric(df[<span class="c3">'standard_value'</span>], errors=<span class="c3">'coerce'</span>)
+df = df.dropna(subset=[<span class="c3">'standard_value'</span>, <span class="c3">'canonical_smiles'</span>])
+<span class="c1">print</span>(<span class="c3">f"清洗后: {len(df)} 条"</span>)
+
+<span class="c2"># IC50 越小活性越高 → 转 pIC50 = -log10(IC50) 让它越大越好</span>
+<span class="c2"># IC50单位通常是nM，先统一转成M：IC50(M) = IC50(nM) × 10⁻⁹</span>
+df[<span class="c3">'pIC50'</span>] = -np.log10(df[<span class="c3">'standard_value'</span>] * 1e-9)
+
+<span class="c1">print</span>(<span class="c3">f"pIC50 范围: {df['pIC50'].min():.1f} ~ {df['pIC50'].max():.1f}"</span>)
+<span class="c1">print</span>(<span class="c3">f"pIC50 均值: {df['pIC50'].mean():.1f}"</span>)
+
+<span class="c2"># 保存</span>
+df.to_csv(<span class="c3">'egfr_ic50_data.csv'</span>, index=<span class="c1">False</span>)
+<span class="c1">print</span>(<span class="c3">"✅ 数据已保存"</span>)</code></pre>
+<div class="note">💡 <b>pIC50 是什么？</b> pIC50 = -log₁₀(IC50)。IC50=1nM → pIC50=9；IC50=1μM → pIC50=6。值越大活性越强。这样做回归时"大=好"。</div>
+</div>
+
+<div class="step"><h4>第6步：练习</h4>
+<p>搜索一个你知道的药物靶点（ACE 血管紧张素转化酶 / COX-2 / 5-HT3 血清素受体），获取 IC50 数据 → 清洗 → 转 pIC50 → 保存 CSV。</p>
+</div>
+<div class="check">✅ <b>验收：</b>能独立：搜靶点 → 获取活性数据 → 转 DataFrame → 清洗 → 保存 CSV</div>
+
+<!-- DAY 4-5 -->
+<h2>Day 4：制药工艺数据——理解批次数据的特点</h2>
+<p style="color:#8b949e">⏱️ 1.5小时 · 🎯 理解工艺数据结构，能用 Python 处理批次×参数×时间多维数据</p>
+
+<div class="step"><h4>核心认知</h4>
+<p>制药工艺数据 = 三维结构（批次 × 工艺参数 × 时间）。每一批生产会产生：</p>
+<ul><li><b>工艺参数</b>：温度曲线、pH变化、搅拌转速、加料速率、各步骤持续时长</li>
+<li><b>中间体检测</b>：IPC（过程控制）检测值——反应终点判断</li>
+<li><b>最终质量</b>：收率、纯度、粒径分布、晶型、残留溶剂</li></ul>
+</div>
+
+<div class="step"><h4>构造50批模拟工艺数据</h4>
+<pre><code><span class="c1">import</span> numpy <span class="c1">as</span> np; <span class="c1">import</span> pandas <span class="c1">as</span> pd
+np.random.seed(42)
+
+n = 50  <span class="c2"># 50个批次</span>
+df = pd.DataFrame({
+    <span class="c3">'batch_id'</span>: [<span class="c3">f'B{i:03d}'</span> <span class="c1">for</span> i <span class="c1">in</span> <span class="c1">range</span>(1, n+1)],
+    <span class="c3">'产品'</span>: np.random.choice([<span class="c3">'A药'</span>,<span class="c3">'B药'</span>,<span class="c3">'C药'</span>], n),
+    <span class="c3">'反应温度_C'</span>: np.random.normal(60, 3, n),
+    <span class="c3">'结晶温度_C'</span>: np.random.normal(5, 1.5, n),
+    <span class="c3">'pH'</span>: np.random.normal(7.0, 0.3, n),
+    <span class="c3">'搅拌转速_rpm'</span>: np.random.normal(300, 20, n),
+    <span class="c3">'反应时间_h'</span>: np.random.normal(8, 0.5, n),
+    <span class="c3">'结晶时间_h'</span>: np.random.normal(4, 0.3, n),
+})
+<span class="c2"># 添加相关关系：温度↑→收率↑但纯度↓（真实工艺中的权衡）</span>
+df[<span class="c3">'收率_%'</span>] = 85 + (df[<span class="c3">'反应温度_C'</span>]-60)*0.4 + np.random.normal(0, 3, n)
+df[<span class="c3">'纯度_%'</span>] = 99.5 - (df[<span class="c3">'反应温度_C'</span>]-60)*0.02 + np.random.normal(0, 0.2, n)
+df[<span class="c3">'收率_%'</span>] = df[<span class="c3">'收率_%'</span>].clip(70, 98)
+df[<span class="c3">'纯度_%'</span>] = df[<span class="c3">'纯度_%'</span>].clip(98.5, 100)
+
+<span class="c1">print</span>(df.describe())
+<span class="c1">print</span>(<span class="c3">f"\n数据形状: {df.shape} — {n}批 × {len(df.columns)}列"</span>)</code></pre>
+</div>
+
+<div class="step"><h4>批次间对比分析</h4>
+<pre><code><span class="c2"># 收率最差的3批——调查原因</span>
+worst = df.nsmallest(3, <span class="c3">'收率_%'</span>)
+<span class="c1">print</span>(<span class="c3">"收率最低的3批:"</span>)
+<span class="c1">print</span>(worst[[<span class="c3">'batch_id'</span>,<span class="c3">'反应温度_C'</span>,<span class="c3">'pH'</span>,<span class="c3">'收率_%'</span>,<span class="c3">'纯度_%'</span>]])
+
+<span class="c2"># 对比最好 vs 最差批次</span>
+best = df.loc[df[<span class="c3">'收率_%'</span>].idxmax()]
+<span class="c1">print</span>(<span class="c3">f"\n最好批次 ({best['batch_id']}):"</span>)
+<span class="c1">print</span>(<span class="c3">f"  温度={best['反应温度_C']:.1f} 收率={best['收率_%']:.1f}% 纯度={best['纯度_%']:.2f}%"</span>)
+w = df.loc[df[<span class="c3">'收率_%'</span>].idxmin()]
+<span class="c1">print</span>(<span class="c3">f"\n最差批次 ({w['batch_id']}):"</span>)
+<span class="c1">print</span>(<span class="c3">f"  温度={w['反应温度_C']:.1f} 收率={w['收率_%']:.1f}% 纯度={w['纯度_%']:.2f}%"</span>)
+<span class="c1">print</span>(<span class="c3">f"\n差异分析：温度差{best['反应温度_C']-w['反应温度_C']:.1f}°C"</span>)</code></pre>
+</div>
+<div class="check">✅ <b>验收：</b>能构造和理解三维工艺数据，知道药厂数据两大特点（批次少+数据脏）</div>
+
+<h2>Day 5：GMP 数据合规——AI 在药企的特殊要求</h2>
+<p style="color:#8b949e">⏱️ 1小时 · 🎯 理解 ALCOA+ 和 21 CFR Part 11，知道 AI 落地药企需要什么</p>
+
+<div class="step"><h4>ALCOA+ 原则（药厂数据黄金标准）</h4>
+<table style="width:100%;border-collapse:collapse;color:#8b949e;font-size:.85rem">
+<tr style="background:rgba(96,165,250,.1)"><td style="padding:6px 10px;font-weight:700">A</td><td>Attributable 可归属</td><td>谁产生的这个数据？</td></tr>
+<tr><td style="padding:6px 10px;font-weight:700">L</td><td>Legible 清晰可读</td><td>能看得懂吗？永久可读？</td></tr>
+<tr style="background:rgba(96,165,250,.1)"><td style="padding:6px 10px;font-weight:700">C</td><td>Contemporaneous 同步</td><td>当时就记录了吗？不是事后补的？</td></tr>
+<tr><td style="padding:6px 10px;font-weight:700">O</td><td>Original 原始</td><td>是原始记录还是复制品？</td></tr>
+<tr style="background:rgba(96,165,250,.1)"><td style="padding:6px 10px;font-weight:700">A</td><td>Accurate 准确</td><td>数据无误？没有篡改？</td></tr>
+<tr><td style="padding:6px 10px;font-weight:700" colspan="3">+ Complete (完整) + Consistent (一致) + Enduring (持久) + Available (可用)</td></tr>
+</table>
+</div>
+
+<div class="step"><h4>21 CFR Part 11 对 AI 系统的三大要求</h4>
+<ol><li><b>审计追踪</b>：模型每次预测→记录谁、何时、输入什么、输出什么。变更模型→记录为什么改、改成什么、谁批准的。</li>
+<li><b>电子签名</b>：对AI输出的关键决策（如判定一批药是否放行）需要有资质的人电子签名确认。</li>
+<li><b>系统验证(CSV)</b>：需要证明AI系统按照预期工作。模型性能需经过独立验证集的评估并文档化。</li></ol>
+</div>
+<div class="step"><h4>这对你的 AI 系统意味着什么</h4>
+<ul><li>模型必须可解释 → SHAP/LIME/GNNExplainer</li><li>模型版本管理 → MLflow/DVC/Git</li><li>数据不可篡改 → 只读存储 + 哈希校验</li><li>预测结果带置信度 → 不确定性量化（后面会学）</li></ul>
+</div>
+<div class="check">✅ <b>验收：</b>能默写 ALCOA+，理解为什么 AI 在药企需要额外合规层。写500字学习笔记。</div>
+
+<h2>Day 6：综合实战——ChEMBL + RDKit 完整 Pipeline</h2>
+<p style="color:#8b949e">⏱️ 2小时 · 🎯 走完从数据库到特征矩阵的全流程</p>
+<div class="step"><h4>Pipeline 流程</h4>
+<ol><li>ChEMBL 获取 EGFR 靶点 ≥200 个化合物的 SMILES + IC50</li><li>RDKit 计算：≥20 个描述符 + ECFP4 指纹(1024位)</li><li>Pandas 清洗：去 NaN、去极端值、去无效 SMILES</li><li>4张分析图：特征分布直方图/相关性热力图/MW vs LogP散点图/PCA降维散点图(颜色=活性高低)</li><li>分析：活性高 vs 低的分子在关键描述符上的差异</li><li>保存 CSV：<code>egfr_features_YYYYMMDD.csv</code></li></ol>
+</div>
+<div class="note">💡 这个 CSV 文件是你第4周 ADMET 建模的原材料。把代码写成 .py 脚本，一行命令就跑完整个 Pipeline。</div>
+
+<h2>Day 7：🔄 阶段一总结 + 知识地图</h2>
+<p style="color:#8b949e">⏱️ 1.5小时 · 🎯 闭卷自测，确保基础扎实</p>
+<div class="step"><h4>自测题</h4>
+<ol><li>关掉所有教程，从零写：读取CSV→筛选→groupby→画6张图</li><li>从SMILES列表→RDKit算描述符矩阵→保存CSV</li><li>说出ChEMBL数据层级（Target→Assay→Activity→Molecule）</li><li>默写ALCOA+每个字母</li><li>loc和iloc的区别？& 和 and 在筛选中的区别？</li></ol>
+</div>
+<div class="check">✅ 自测80%以上→进阶段二！低于80%→回头补上薄弱环节再走。</div>
+
+<div style="margin-top:40px;padding-top:20px;border-top:1px solid #30363d;text-align:center;color:#8b949e">
+  <p>🏁 第2周（化学信息学+GMP）已完成 · 约6000字详细教程</p>
+</div>
+</body></html>

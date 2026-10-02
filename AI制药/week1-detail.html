@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>第1周 · 详细教程</title>
+<style>
+body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;background:#0d1117;color:#e6edf3;max-width:900px;margin:0 auto;padding:20px;line-height:1.8}
+h1{color:#2dd4bf;border-bottom:2px solid #30363d;padding-bottom:10px}
+h2{color:#a78bfa;margin-top:36px}
+h3{color:#60a5fa;margin-top:24px}
+.step{background:#161b22;border:1px solid #30363d;border-radius:10px;padding:16px 20px;margin:12px 0}
+.step h4{color:#2dd4bf;margin:0 0 8px}
+.step p,.step li{margin:6px 0;color:#8b949e;font-size:.9rem}
+.step ul{padding-left:20px}
+pre{background:#0a0e15;border:1px solid #30363d;border-radius:8px;padding:12px 16px;overflow-x:auto;font-size:.82rem;line-height:1.6}
+code{font-family:"Cascadia Code","Fira Code",monospace;font-size:.82rem}
+.c1{color:#2dd4bf}.c2{color:#6a9955}.c3{color:#fbbf24}.c4{color:#f472b6}
+.note{background:rgba(251,191,36,.1);border-left:3px solid #fbbf24;padding:10px 14px;margin:10px 0;border-radius:0 8px 8px 0;font-size:.85rem}
+.check{background:rgba(74,222,128,.08);border-left:3px solid #4ade80;padding:10px 14px;margin:10px 0;border-radius:0 8px 8px 0;font-size:.85rem}
+.warn{background:rgba(248,113,113,.08);border-left:3px solid #f87171;padding:10px 14px;margin:10px 0;border-radius:0 8px 8px 0;font-size:.85rem}
+.tag{display:inline-block;padding:2px 10px;border-radius:12px;font-size:.7rem;margin:2px;background:rgba(139,148,158,.15);color:#8b949e}
+</style>
+</head>
+<body>
+
+<h1>💊 第1周：Python 数据科学工具链 — 详细教程</h1>
+<p style="color:#8b949e">⏱️ 每天 1.5-2 小时 · 共 7 天 · 第7天为复习日</p>
+<p style="color:#8b949e">🎯 本周目标：从零搭建 Python 环境，掌握 NumPy/Pandas/Matplotlib，能做完整的数据分析报告</p>
+
+<!-- ============ DAY 1 ============ -->
+<h2>Day 1：环境搭建 + 打开 Jupyter 敲第一行代码</h2>
+<p style="color:#8b949e">⏱️ 1.5小时 · 🎯 Python环境就绪，Jupyter能跑通</p>
+
+<h3>为什么今天是地基？</h3>
+<p>后面所有的代码都要在 Python 环境里跑。环境没装好 = 后面全卡住。今天花 1.5 小时把环境搞定，后面 83 天都顺畅。</p>
+
+<div class="step"><h4>第1步：安装 Anaconda（约5分钟）</h4>
+<p>Anaconda 是一个打包了 Python + 常用科学库 + Jupyter 的大礼包，省得你一个一个装。</p>
+<ol>
+<li>打开 <a href="https://www.anaconda.com/download" style="color:#60a5fa">anaconda.com/download</a></li>
+<li>下载 <b>Individual Edition</b>（免费），选 Windows 64-bit</li>
+<li>下载完成后双击安装包，一路点 <b>Next</b></li>
+<li>到 "Advanced Options" 那一步，<b>不用勾 "Add Anaconda to PATH"</b>（勾了反而可能出问题）</li>
+<li>点 Install，等进度条走完（约3-5分钟）</li>
+</ol>
+<div class="note">💡 <b>为什么不加 PATH？</b> Anaconda 推荐通过 Anaconda Prompt（开始菜单里搜）来使用，这样不会和其他软件的 Python 冲突。</div>
+</div>
+
+<div class="step"><h4>第2步：打开 Anaconda Prompt，创建虚拟环境</h4>
+<p>虚拟环境 = 一个隔离的 Python 小世界。不同项目可以有不同的环境，互不干扰。</p>
+<ol>
+<li>按键盘 <b>Win 键</b>，搜索 <b>"Anaconda Prompt"</b>，打开它</li>
+<li>你会看到一个黑底白字的命令行窗口，光标闪烁的地方就是输入命令的位置</li>
+<li>输入以下命令（<b>逐行</b>输入，每行输完按回车）：</li>
+</ol>
+<pre><code><span class="c2"># 创建虚拟环境，名字叫 ai-pharma，Python版本3.10</span>
+<span class="c1">conda create -n ai-pharma python=3.10 -y</span>
+
+<span class="c2"># 看到 "done" 就说明创建成功了</span>
+<span class="c2"># 激活这个环境（进入这个小世界）</span>
+<span class="c1">conda activate ai-pharma</span>
+
+<span class="c2"># 你会看到命令行前面从 (base) 变成了 (ai-pharma)，说明切换成功了</span></code></pre>
+<div class="check">✅ <b>验收：</b>命令行前面显示 <code>(ai-pharma)</code></div>
+</div>
+
+<div class="step"><h4>第3步：安装核心 Python 包</h4>
+<p>在 <code>(ai-pharma)</code> 环境下，输入以下命令安装后续需要的包：</p>
+<pre><code><span class="c1">pip install jupyter numpy pandas matplotlib seaborn scikit-learn</span></code></pre>
+<p>这个命令会联网下载并安装 6 个包。你会看到一堆下载进度条，最后出现 <code>Successfully installed ...</code> 就说明装好了。</p>
+<div class="warn">⚠️ <b>如果报红字错误</b>：大概率是网络问题。关掉 VPN，或者换清华镜像源：
+<pre><code><span class="c1">pip install jupyter numpy pandas matplotlib seaborn scikit-learn -i https://pypi.tuna.tsinghua.edu.cn/simple</span></code></pre></div>
+</div>
+
+<div class="step"><h4>第4步：启动 Jupyter Notebook</h4>
+<p>Jupyter 是一个在浏览器里写 Python 的工具，可以一行一行运行代码，非常适合学习。</p>
+<pre><code><span class="c1">jupyter notebook</span></code></pre>
+<p>输入后浏览器会自动打开一个页面→ 点击右上角 <b>New → Python 3</b> → 一个新的 Notebook 就打开了。</p>
+<p>你会看到一个空白的单元格（cell），光标在里面闪烁。这就是你写代码的地方。</p>
+<div class="note">💡 Jupyter 的 cell 有两种模式：<b>Code</b>（写代码，默认）和 <b>Markdown</b>（写笔记）。按 <b>Shift+Enter</b> 运行当前 cell。</div>
+</div>
+
+<div class="step"><h4>第5步：测试环境——敲第一行代码</h4>
+<p>在第一个 cell 里输入以下代码，然后按 <b>Shift+Enter</b> 运行：</p>
+<pre><code><span class="c1">import</span> numpy <span class="c1">as</span> np
+<span class="c1">import</span> pandas <span class="c1">as</span> pd
+<span class="c1">import</span> matplotlib.pyplot <span class="c1">as</span> plt
+<span class="c1">import</span> seaborn <span class="c1">as</span> sns
+
+<span class="c1">print</span>(<span class="c3">"🎉 环境就绪！"</span>)
+<span class="c1">print</span>(<span class="c3">f"NumPy版本: {np.__version__}"</span>)
+<span class="c1">print</span>(<span class="c3">f"Pandas版本: {pd.__version__}"</span>)
+<span class="c1">print</span>(np.arange(10).sum())  <span class="c2"># 0+1+2+...+9 = 45</span></code></pre>
+<p>如果看到输出 <b>45</b> 且没有红色报错，环境就装好了！🎉</p>
+<div class="check">✅ <b>验收：</b>最后一行输出 45，没有任何红色报错信息</div>
+</div>
+
+<div class="step"><h4>第6步：5 个基础练习（巩固 Python 语法）</h4>
+<p>在 Jupyter 里新建 5 个 cell，分别完成：</p>
+<ol>
+<li><b>列表和循环</b>：<pre><code><span class="c2"># 创建5种药名列表，用for循环打印</span>
+drugs = [<span class="c3">"阿司匹林"</span>, <span class="c3">"布洛芬"</span>, <span class="c3">"对乙酰氨基酚"</span>, <span class="c3">"奥美拉唑"</span>, <span class="c3">"二甲双胍"</span>]
+<span class="c1">for</span> d <span class="c1">in</span> drugs:
+    <span class="c1">print</span>(<span class="c3">f"药品: {d}"</span>)</code></pre></li>
+<li><b>函数</b>：<pre><code><span class="c2"># 写一个函数判断分子量是否大于500（大分子药物）</span>
+<span class="c1">def</span> <span class="c4">is_large_molecule</span>(mol_wt):
+    <span class="c1">return</span> mol_wt > 500
+
+<span class="c1">print</span>(is_large_molecule(180))  <span class="c2"># False（阿司匹林分子量180）</span>
+<span class="c1">print</span>(is_large_molecule(1200)) <span class="c2"># True（抗体药物分子量可达上万）</span></code></pre></li>
+<li><b>字典</b>：<pre><code><span class="c2"># 建字典存3个药的名称、分子量、LogP</span>
+drug_db = {
+    <span class="c3">"阿司匹林"</span>: {<span class="c3">"mw"</span>: 180.16, <span class="c3">"logp"</span>: 1.2},
+    <span class="c3">"布洛芬"</span>: {<span class="c3">"mw"</span>: 206.28, <span class="c3">"logp"</span>: 3.5},
+    <span class="c3">"对乙酰氨基酚"</span>: {<span class="c3">"mw"</span>: 151.16, <span class="c3">"logp"</span>: 0.5},
+}
+<span class="c1">print</span>(drug_db[<span class="c3">"布洛芬"</span>][<span class="c3">"mw"</span>])  <span class="c2"># 206.28</span></code></pre></li>
+<li><b>文件读写</b>：<pre><code><span class="c2"># 写一个文件再读回来</span>
+<span class="c1">with</span> <span class="c1">open</span>(<span class="c3">"drugs.txt"</span>, <span class="c3">"w"</span>, encoding=<span class="c3">"utf-8"</span>) <span class="c1">as</span> f:
+    f.write(<span class="c3">"阿司匹林\n布洛芬\n对乙酰氨基酚"</span>)
+
+<span class="c1">with</span> <span class="c1">open</span>(<span class="c3">"drugs.txt"</span>, <span class="c3">"r"</span>, encoding=<span class="c3">"utf-8"</span>) <span class="c1">as</span> f:
+    content = f.read()
+<span class="c1">print</span>(content)</code></pre></li>
+<li><b>看报错</b>：<pre><code><span class="c2"># 故意写错，看Jupyter怎么报错</span>
+1 / 0  <span class="c2"># ZeroDivisionError——学会读报错信息很重要！</span></code></pre></li>
+</ol>
+<div class="check">✅ <b>验收：</b>5个练习都能跑通，没有语法错误。知道Jupyter怎么报错了。</div>
+</div>
+
+<div class="step"><h4>今日关键概念</h4>
+<ul>
+<li><b>虚拟环境</b>：隔离的 Python 小世界，避免包冲突。以后每个新项目都应该建一个新的环境</li>
+<li><b>Jupyter Notebook</b>：浏览器里写 Python，cell 是基本单位，Shift+Enter 运行</li>
+<li><b>pip install</b>：Python 的包管理器，相当于手机上的应用商店</li>
+</ul>
+</div>
+
+<div class="check">✅ <b>今日验收标准：</b>Jupyter 能打开，<code>import numpy/pandas/matplotlib/seaborn</code> 不报错，5 个基础练习都跑通</div>
+<div class="warn">⚠️ <b>常见坑：</b>① pip install 报红字→关 VPN 或换清华源 ② Jupyter 找不到 ai-pharma 环境→在 ai-pharma 里 <code>pip install ipykernel</code> 然后 <code>python -m ipykernel install --user --name ai-pharma</code> ③ Win 键搜不到 Anaconda Prompt→去开始菜单 Anaconda3 文件夹里找</div>
+
+<!-- ============ DAY 2 ============ -->
+<h2>Day 2：NumPy——数据科学的地基</h2>
+<p style="color:#8b949e">⏱️ 1.5小时 · 🎯 熟练创建和操作 ndarray，理解广播机制</p>
+
+<h3>NumPy 是什么？为什么重要？</h3>
+<p>NumPy = <b>Numerical Python</b>。它提供了一个叫 <b>ndarray</b>（N-dimensional array，多维数组）的数据结构，是 Python 数据科学大厦的地基。Pandas、Matplotlib、scikit-learn、PyTorch 全部建立在 NumPy 之上。</p>
+<p>核心价值：<b>ndarray 比 Python 原生的 list 快 50-100 倍</b>。因为 ndarray 里的数据在内存中是连续存放的（C 语言级别），而 list 里的每个元素都是一个指向对象的指针。</p>
+
+<div class="step"><h4>第1步：理解 ndarray vs Python list——为什么快？</h4>
+<p>在 Jupyter 里新建一个 notebook，跑这段代码感受速度差：</p>
+<pre><code><span class="c1">import</span> numpy <span class="c1">as</span> np
+<span class="c1">import</span> time
+
+<span class="c2"># 创建100万个数字</span>
+py_list = <span class="c1">list</span>(<span class="c1">range</span>(1_000_000))
+np_arr = np.arange(1_000_000)
+
+<span class="c2"># 对比求和速度（Jupyter魔术命令%timeit会跑多次取平均）</span>
+<span class="c1">print</span>(<span class="c3">"Python list 求和耗时："</span>)
+%timeit <span class="c1">sum</span>(py_list)
+
+<span class="c1">print</span>(<span class="c3">"\nNumPy ndarray 求和耗时："</span>)
+%timeit np_arr.sum()
+
+<span class="c2"># 你大概会看到 NumPy 比 Python 原生快 30-80 倍</span></code></pre>
+<div class="note">💡 <b>%timeit</b> 是 Jupyter 的魔术命令，会自动跑多次取平均。在普通 .py 文件里不能这么写，但 Jupyter 里可以。</div>
+</div>
+
+<div class="step"><h4>第2步：6 种创建 ndarray 的方式（全部跑一遍）</h4>
+<pre><code><span class="c1">import</span> numpy <span class="c1">as</span> np
+
+<span class="c2"># 1. 从 Python list 创建</span>
+arr1 = np.array([1, 2, 3, 4, 5])
+<span class="c1">print</span>(<span class="c3">f"从list创建: {arr1}, 类型: {arr1.dtype}"</span>)
+
+<span class="c2"># 2. 全零矩阵——初始化权重时常用</span>
+arr2 = np.zeros((3, 4))  <span class="c2"># 3行4列，全是0</span>
+<span class="c1">print</span>(<span class="c3">f"\n全零(3,4):\n{arr2}"</span>)
+
+<span class="c2"># 3. 全一矩阵</span>
+arr3 = np.ones((2, 3))   <span class="c2"># 2行3列，全是1</span>
+<span class="c1">print</span>(<span class="c3">f"\n全一(2,3):\n{arr3}"</span>)
+
+<span class="c2"># 4. 等差数列——从0到10，步长2</span>
+arr4 = np.arange(0, 10, 2)  <span class="c2"># [0, 2, 4, 6, 8]</span>
+<span class="c1">print</span>(<span class="c3">f"\n等差数列: {arr4}"</span>)
+
+<span class="c2"># 5. 等间距——在0和1之间均匀取5个点</span>
+arr5 = np.linspace(0, 1, 5)  <span class="c2"># [0, 0.25, 0.5, 0.75, 1.0]</span>
+<span class="c1">print</span>(<span class="c3">f"\n等间距: {arr5}"</span>)
+
+<span class="c2"># 6. 随机数——标准正态分布(均值0,标准差1)</span>
+arr6 = np.random.randn(3, 3)  <span class="c2"># 3×3随机矩阵</span>
+<span class="c1">print</span>(<span class="c3">f"\n随机正态(3,3):\n{arr6}"</span>)
+
+<span class="c2"># 查看数组的属性</span>
+<span class="c1">print</span>(<span class="c3">f"\n形状: {arr6.shape}"</span>)   <span class="c2"># (3,3)</span>
+<span class="c1">print</span>(<span class="c3">f"维度: {arr6.ndim}"</span>)      <span class="c2"># 2</span>
+<span class="c1">print</span>(<span class="c3">f"元素总数: {arr6.size}"</span>)  <span class="c2"># 9</span>
+<span class="c1">print</span>(<span class="c3">f"数据类型: {arr6.dtype}"</span>) <span class="c2"># float64</span></code></pre>
+<div class="check">✅ <b>验收：</b>6 种创建方式都能跑通，理解 shape/ndim/size/dtype 的含义</div>
+</div>
+
+<div class="step"><h4>第3步：索引和切片——怎么取数据</h4>
+<p>这是 NumPy 最重要的基本功。花 15 分钟逐个跑下面的代码：</p>
+<pre><code><span class="c1">import</span> numpy <span class="c1">as</span> np
+
+<span class="c2"># === 一维数组 ===</span>
+arr = np.array([10, 20, 30, 40, 50, 60, 70, 80])
+<span class="c1">print</span>(arr[0])       <span class="c2"># 10 — 第一个元素（索引从0开始）</span>
+<span class="c1">print</span>(arr[-1])      <span class="c2"># 80 — 最后一个元素</span>
+<span class="c1">print</span>(arr[2:5])     <span class="c2"># [30 40 50] — 索引2到4（不含5）</span>
+<span class="c1">print</span>(arr[::2])     <span class="c2"># [10 30 50 70] — 每隔一个取</span>
+
+<span class="c2"># === 二维数组（矩阵）===</span>
+mat = np.array([[1, 2, 3],
+                [4, 5, 6],
+                [7, 8, 9]])
+<span class="c1">print</span>(<span class="c3">f"原始矩阵:\n{mat}"</span>)
+<span class="c1">print</span>(<span class="c3">f"\nmat[0,1] = {mat[0,1]}"</span>)   <span class="c2"># 2 — 第0行第1列</span>
+<span class="c1">print</span>(<span class="c3">f"mat[0] = {mat[0]}"</span>)         <span class="c2"># [1 2 3] — 第0行</span>
+<span class="c1">print</span>(<span class="c3">f"mat[:,0] = {mat[:,0]}"</span>)     <span class="c2"># [1 4 7] — 第0列（:表示所有行）</span>
+<span class="c1">print</span>(<span class="c3">f"mat[1:3,:] =\n{mat[1:3,:]}"</span>) <span class="c2"># 第1-2行的所有列</span>
+
+<span class="c2"># === 布尔索引 ===</span>
+<span class="c1">print</span>(<span class="c3">f"\n大于5的元素: {mat[mat > 5]}"</span>)  <span class="c2"># [6 7 8 9]</span>
+<span class="c1">print</span>(<span class="c3">f"大于5的掩码:\n{mat > 5}"</span>)      <span class="c2"># True/False矩阵</span></code></pre>
+<div class="note">💡 <b>axis（轴）的理解</b>——这是 NumPy 里最容易晕的概念：<br>• <b>axis=0</b>：沿<b>行方向</b>操作（垂直向下），结果 <b>行数减少</b><br>• <b>axis=1</b>：沿<b>列方向</b>操作（水平向右），结果 <b>列数减少</b><br>例子：<code>arr.sum(axis=0)</code> = 对每列求和（得到一个包含每列总和的行向量）</div>
+</div>
+
+<div class="step"><h4>第4步：广播（Broadcasting）——NumPy 最强大的特性</h4>
+<p>广播让你能对不同形状的数组做运算。规则：从<b>末尾维度往前对齐</b>，维度为 1 的会自动扩展。</p>
+<pre><code><span class="c2"># 示例1：一维 + 二维</span>
+a = np.array([[1, 2, 3],
+              [4, 5, 6]])  <span class="c2"># shape (2, 3)</span>
+b = np.array([10, 20, 30]) <span class="c2"># shape (3,)</span>
+<span class="c1">print</span>(a + b)
+<span class="c2"># 输出：
+# [[11 22 33]
+#  [14 25 36]]
+# b 被自动"复制"到第0行和第1行</span>
+
+<span class="c2"># 示例2：列向量 + 行向量</span>
+x = np.array([[1], [2], [3]])     <span class="c2"># shape (3, 1)</span>
+y = np.array([10, 20, 30, 40])    <span class="c2"># shape (4,)</span>
+<span class="c1">print</span>(<span class="c3">f"形状: {x.shape}, {y.shape}"</span>)
+result = x + y  <span class="c2"># 广播成 (3, 4)！</span>
+<span class="c1">print</span>(<span class="c3">f"结果形状: {result.shape}"</span>)
+<span class="c1">print</span>(result)
+<span class="c2"># 3×1 和 1×4 → 各自在缺的维度上复制 → 3×4</span></code></pre>
+<div class="note">💡 <b>记忆口诀：</b>"从后往前对齐，谁缺复制谁"。如果有一个维度不匹配且都不是1→报错。</div>
+</div>
+
+<div class="step"><h4>第5步：常用运算速查——跑一遍记住</h4>
+<pre><code>arr = np.array([[1, 2], [3, 4]])
+
+<span class="c1">print</span>(arr.T)                    <span class="c2"># 转置：[[1,3],[2,4]]</span>
+<span class="c1">print</span>(np.dot(arr, arr))         <span class="c2"># 矩阵乘法：[[7,10],[15,22]]</span>
+<span class="c1">print</span>(arr @ arr)                <span class="c2"># @ 也是矩阵乘法（Python 3.5+）</span>
+<span class="c1">print</span>(np.linalg.inv(arr))       <span class="c2"># 矩阵的逆</span>
+<span class="c1">print</span>(arr.mean())               <span class="c2"># 所有元素的均值：2.5</span>
+<span class="c1">print</span>(arr.mean(axis=0))         <span class="c2"># 每列的均值：[2. 3.]</span>
+<span class="c1">print</span>(arr.mean(axis=1))         <span class="c2"># 每行的均值：[1.5 3.5]</span>
+<span class="c1">print</span>(arr.std())                <span class="c2"># 标准差</span>
+<span class="c1">print</span>(arr.min(), arr.max())     <span class="c2"># 最小值和最大值</span>
+<span class="c1">print</span>(arr.sum())                <span class="c2"># 总和</span></code></pre>
+</div>
+
+<div class="step"><h4>第6步：小练习——模拟药片硬度数据</h4>
+<pre><code><span class="c2"># 场景：QC实验室测了10批药片，每批测了5片</span>
+<span class="c2"># 硬度标准：50±10 N</span>
+np.random.seed(42)  <span class="c2"># 固定随机种子，保证每次结果一样</span>
+hardness = np.random.normal(50, 5, (10, 5))  <span class="c2"># 10批×5片</span>
+<span class="c1">print</span>(<span class="c3">f"硬度数据形状: {hardness.shape}"</span>)
+
+<span class="c2"># 每批的统计量</span>
+batch_mean = hardness.mean(axis=1)   <span class="c2"># axis=1：沿列方向=对每行求均值</span>
+batch_std = hardness.std(axis=1)
+batch_min = hardness.min(axis=1)
+batch_max = hardness.max(axis=1)
+
+<span class="c1">print</span>(<span class="c3">f"\n各批均值: {batch_mean.round(1)}"</span>)
+<span class="c1">print</span>(<span class="c3">f"各批标准差: {batch_std.round(2)}"</span>)
+
+<span class="c2"># 找出最好和最差的批次</span>
+best_batch = batch_mean.argmax()  <span class="c2"># 均值最高的批次索引</span>
+worst_batch = batch_mean.argmin()
+<span class="c1">print</span>(<span class="c3">f"\n最好批次: 第{best_batch+1}批, 均值{batch_mean[best_batch]:.1f}"</span>)
+<span class="c1">print</span>(<span class="c3">f"最差批次: 第{worst_batch+1}批, 均值{batch_mean[worst_batch]:.1f}"</span>)
+
+<span class="c2"># 检查是否有批次超出规格</span>
+oos = (batch_min < 40) | (batch_max > 60)  <span class="c2"># OOS = Out of Specification</span>
+<span class="c1">print</span>(<span class="c3">f"\n不合格批次: {np.where(oos)[0] + 1}"</span>)</code></pre>
+</div>
+
+<div class="check">✅ <b>今日验收标准：</b>每种创建方式都会用，理解 axis=0 vs axis=1，能解释广播 (3,1)+(4,)→(3,4) 的原理，小练习跑通</div>
+<div class="warn">⚠️ <b>常见坑：</b>① axis 方向容易搞反→记住 axis=0 压缩行 ② reshape(-1,1) 中 -1 = 自动计算那个维度 ③ np.matrix 和 np.array 行为不同，一律用 array</div>
+
+<!-- ============ DAY 3 ============ -->
+<h2>Day 3：Pandas——像操作 Excel 一样操作数据</h2>
+<p style="color:#8b949e">⏱️ 1.5小时 · 🎯 能用 Pandas 读CSV、做筛选、处理缺失值、做基本统计</p>
+
+<div class="step"><h4>第1步：DataFrame 是什么？手动创建一个</h4>
+<p>DataFrame = 加强版 Excel 表格。有行索引（index）和列名（columns）。Series = 加强版的一列（带标签的一维数组）。</p>
+<pre><code><span class="c1">import</span> pandas <span class="c1">as</span> pd
+<span class="c1">import</span> numpy <span class="c1">as</span> np
+
+<span class="c2"># 模拟一个药厂的小型数据表</span>
+df = pd.DataFrame({
+    <span class="c3">'批号'</span>: [<span class="c3">'B001'</span>, <span class="c3">'B002'</span>, <span class="c3">'B003'</span>, <span class="c3">'B004'</span>, <span class="c3">'B005'</span>],
+    <span class="c3">'产品'</span>: [<span class="c3">'A药'</span>, <span class="c3">'A药'</span>, <span class="c3">'B药'</span>, <span class="c3">'B药'</span>, <span class="c3">'A药'</span>],
+    <span class="c3">'反应温度_C'</span>: [60, 62, 58, 63, 61],
+    <span class="c3">'pH'</span>: [7.1, 7.0, 6.8, 7.2, 7.1],
+    <span class="c3">'搅拌转速_rpm'</span>: [300, 310, 295, 305, 302],
+    <span class="c3">'收率_%'</span>: [88.5, 92.1, 85.3, 91.0, 89.2],
+    <span class="c3">'纯度_%'</span>: [99.2, 99.5, 98.8, 99.3, 99.1],
+    <span class="c3">'是否合格'</span>: [<span class="c1">True</span>, <span class="c1">True</span>, <span class="c1">False</span>, <span class="c1">True</span>, <span class="c1">True</span>]
+})
+
+<span class="c2"># === 查看数据的基本信息 ===</span>
+<span class="c1">print</span>(<span class="c3">"前3行:"</span>)
+<span class="c1">print</span>(df.head(3))       <span class="c2"># 前N行，默认5行</span>
+<span class="c1">print</span>(<span class="c3">f"\n形状: {df.shape}"</span>)  <span class="c2"># (5, 8) = 5行8列</span>
+<span class="c1">print</span>(<span class="c3">f"\n列名: {df.columns.tolist()}"</span>)
+<span class="c1">print</span>(<span class="c3">f"\n数据类型:\n{df.dtypes}"</span>)
+<span class="c1">print</span>(<span class="c3">f"\n统计摘要:\n{df.describe()}"</span>)  <span class="c2"># 数值列的均值/标准差/四分位数</span></code></pre>
+</div>
+
+<div class="step"><h4>第2步：选数据——loc 和 iloc 的区别（今天最重要的概念）</h4>
+<pre><code><span class="c2"># ===== 按列名选（最常用）=====</span>
+<span class="c1">print</span>(df[<span class="c3">'反应温度_C'</span>])           <span class="c2"># 选一列，返回Series</span>
+<span class="c1">print</span>(df[[<span class="c3">'批号'</span>, <span class="c3">'收率_%'</span>]])      <span class="c2"># 选多列，返回DataFrame</span>
+
+<span class="c2"># ===== loc：按标签（名字）选 =====</span>
+<span class="c2"># 含结尾！df.loc[0:2] 返回第0、1、2行（3行）</span>
+<span class="c1">print</span>(df.loc[0:2, [<span class="c3">'批号'</span>, <span class="c3">'反应温度_C'</span>, <span class="c3">'收率_%'</span>]])
+<span class="c2"># 返回：索引0、1、2的3行×3列</span>
+
+<span class="c2"># ===== iloc：按位置（数字）选 =====</span>
+<span class="c2"># 不含结尾！df.iloc[0:2] 只返回第0、1行（2行）</span>
+<span class="c1">print</span>(df.iloc[0:2, 0:3])
+<span class="c2"># 返回：位置0、1的2行×位置0、1、2的3列</span>
+
+<span class="c2"># 记忆技巧：</span>
+<span class="c2"># loc = label（标签）→ 含结尾，像字典的key</span>
+<span class="c2"># iloc = integer location → 不含结尾，像Python切片</span></code></pre>
+<div class="note">💡 <b>loc vs iloc 是最容易在面试中被问的 Pandas 知识点。</b>一句话总结：loc 按名字选含结尾，iloc 按位置选不含结尾。</div>
+</div>
+
+<div class="step"><h4>第3步：数据筛选——5 个必会的筛选操作</h4>
+<pre><code><span class="c2"># 1. 单条件：收率大于90%的批次</span>
+high_yield = df[df[<span class="c3">'收率_%'</span>] > 90]
+<span class="c1">print</span>(<span class="c3">f"收率>90%:\n{high_yield}"</span>)
+
+<span class="c2"># 2. 多条件：温度>60 且 收率>88（用 & 不是 and！每个条件要加括号！）</span>
+good_batches = df[(df[<span class="c3">'反应温度_C'</span>] > 60) & (df[<span class="c3">'收率_%'</span>] > 88)]
+<span class="c1">print</span>(<span class="c3">f"\n高温度且高收率:\n{good_batches}"</span>)
+
+<span class="c2"># 3. 或条件：A药 或 B002批号（用 | 不是 or）</span>
+special = df[(df[<span class="c3">'产品'</span>] == <span class="c3">'A药'</span>) | (df[<span class="c3">'批号'</span>] == <span class="c3">'B002'</span>)]
+<span class="c1">print</span>(<span class="c3">f"\nA药或B002:\n{special}"</span>)
+
+<span class="c2"># 4. isin：筛选指定值</span>
+target = df[df[<span class="c3">'批号'</span>].isin([<span class="c3">'B001'</span>, <span class="c3">'B003'</span>, <span class="c3">'B005'</span>])]
+<span class="c1">print</span>(<span class="c3">f"\n指定批号:\n{target}"</span>)
+
+<span class="c2"># 5. 字符串筛选：批号包含'B00'</span>
+starts_with = df[df[<span class="c3">'批号'</span>].str.contains(<span class="c3">'B00'</span>)]
+<span class="c1">print</span>(<span class="c3">f"\n批号含B00:\n{starts_with}"</span>)</code></pre>
+<div class="warn">⚠️ <b>多条件筛选三大铁律：(1)用 & 不用 and (2)用 | 不用 or (3)每个条件必须加括号！</b> 忘了括号 → 报错。用了 and → 报错。</div>
+</div>
+
+<div class="step"><h4>第4步：缺失值处理——药厂数据经常缺胳膊少腿</h4>
+<pre><code><span class="c2"># 先创建一些缺失值</span>
+df2 = df.copy()
+df2.loc[1, <span class="c3">'pH'</span>] = np.nan        <span class="c2"># B002的pH缺失</span>
+df2.loc[3, <span class="c3">'收率_%'</span>] = np.nan     <span class="c2"># B004的收率缺失</span>
+<span class="c1">print</span>(df2)
+
+<span class="c2"># 查看缺失情况</span>
+<span class="c1">print</span>(<span class="c3">f"\n每列缺失值数量:\n{df2.isna().sum()}"</span>)
+<span class="c1">print</span>(<span class="c3">f"总缺失值: {df2.isna().sum().sum()}"</span>)
+
+<span class="c2"># 方法1：填一个固定值</span>
+df_filled = df2.fillna(0)  <span class="c2"># 填0——不推荐，会扭曲数据</span>
+
+<span class="c2"># 方法2：用该列的均值填充（更合理）</span>
+df_filled2 = df2.fillna(df2.mean(numeric_only=<span class="c1">True</span>))
+
+<span class="c2"># 方法3：用前一个值填充（时间序列数据常用）</span>
+df_filled3 = df2.ffill()  <span class="c2"># forward fill</span>
+
+<span class="c2"># 方法4：直接删除含缺失值的行</span>
+df_dropped = df2.dropna()  <span class="c2"># 谨慎使用——可能丢掉太多数据</span>
+
+<span class="c1">print</span>(<span class="c3">f"\n删除缺失值后剩余: {len(df_dropped)}行（原来{len(df2)}行）"</span>)</code></pre>
+</div>
+
+<div class="step"><h4>第5步：综合练习</h4>
+<p>自己构造一个 20 行的"药片质检表"，包含以下列：</p>
+<p><code>batch_id | product | temperature | humidity | hardness_N | friability_% | thickness_mm | pass_fail</code></p>
+<p>要求：① 至少 3 个缺失值 ② 至少 1 个异常值（如硬度=999） ③ 用今天学的方法做完整清洗</p>
+</div>
+
+<div class="check">✅ <b>今日验收标准：</b>能独立写 <code>df[df["列名"]>值]</code> 做筛选，loc/iloc 不搞混，会用 <code>fillna</code>/<code>dropna</code>/<code>isna</code></div>
+
+<!-- DAY 4-7 continue similarly... -->
+<h2>Day 4-7：详细内容</h2>
+<p>第4天（Pandas进阶分组聚合）、第5天（可视化）、第6天（EDA综合）、第7天（复习）的详细教程结构与上面相同，每条都包含完整可运行的代码。</p>
+<p style="color:#fbbf24">💡 如果这篇教程的详细程度你觉得合适，告诉我，我继续把第2-12周全部按这个标准写出来。</p>
+
+<div style="margin-top:40px;padding-top:20px;border-top:1px solid #30363d;text-align:center;color:#8b949e;font-size:.85rem">
+  <p>🏁 Day 1-3 已完整展开（约 5000 字） · Day 4-7 待展开</p>
+</div>
+</body>
+</html>

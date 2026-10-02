@@ -1,0 +1,54 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>第7周·详细教程</title>
+<style>body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;background:#0d1117;color:#e6edf3;max-width:900px;margin:0 auto;padding:20px;line-height:1.8}h1{color:#2dd4bf;border-bottom:2px solid #30363d;padding-bottom:10px}h2{color:#a78bfa;margin-top:36px}h3{color:#60a5fa}.step{background:#161b22;border:1px solid #30363d;border-radius:10px;padding:16px 20px;margin:12px 0}.step h4{color:#2dd4bf;margin:0 0 8px}.step p,.step li{margin:6px 0;color:#8b949e;font-size:.9rem}pre{background:#0a0e15;border:1px solid #30363d;border-radius:8px;padding:12px 16px;overflow-x:auto;font-size:.82rem;line-height:1.6}code{font-family:"Cascadia Code","Fira Code",monospace;font-size:.82rem}.c1{color:#2dd4bf}.c2{color:#6a9955}.c3{color:#fbbf24}.note{background:rgba(251,191,36,.1);border-left:3px solid #fbbf24;padding:10px 14px;margin:10px 0;border-radius:0 8px 8px 0;font-size:.85rem}.check{background:rgba(74,222,128,.08);border-left:3px solid #4ade80;padding:10px 14px;margin:10px 0;border-radius:0 8px 8px 0;font-size:.85rem}</style></head><body>
+<h1>🧬 第7周：分子生成——创造新分子</h1>
+<p style="color:#8b949e">⏱️ 每天 1.5-2小时 · 共 7 天</p>
+<p style="color:#8b949e">🎯 从"预测已有分子"到"生成新分子"。AI制药最令人兴奋的方向。</p>
+
+<h2>Day 1：SMILES语言模型——像写文章一样写分子</h2>
+<p>把SMILES看作化学语言→每个字符是一个token→训练字符级LSTM预测下一个字符→输入起始字符→逐字生成新SMILES。</p>
+
+<div class="step"><h4>核心代码架构</h4>
+<pre><code><span class="c2"># 1. 字符级Tokenization</span>
+all_smiles = df[<span class="c3">'Drug'</span>].tolist()
+chars = <span class="c1">sorted</span>(<span class="c1">set</span>(<span class="c3">''</span>.join(all_smiles)))
+char2idx = {c:i <span class="c1">for</span> i,c <span class="c1">in</span> <span class="c1">enumerate</span>(chars)}
+idx2char = {i:c <span class="c1">for</span> c,i <span class="c1">in</span> char2idx.items()}
+
+<span class="c2"># 2. 训练字符级LSTM语言模型</span>
+<span class="c2"># 输入: 前N个字符 → 输出: 预测第N+1个字符 → 交叉熵损失</span>
+
+<span class="c2"># 3. 采样生成新分子</span>
+<span class="c1">def</span> <span class="c4">sample_molecule</span>(model, start_char=<span class="c3">'C'</span>, max_len=100, temperature=0.8):
+    <span class="c2"># 温度>1: 更随机/更多样; 温度<1: 更确定/更保守</span>
+
+<span class="c2"># 4. 化学有效性检查</span>
+valid = Chem.MolFromSmiles(generated_smiles) <span class="c1">is</span> <span class="c1">not</span> <span class="c1">None</span></code></pre>
+</div>
+<div class="check">✅ SMILES生成器有效率>80%即合格</div>
+
+<h2>Day 2：VAE分子生成——在潜空间中漫游</h2>
+<p>VAE=编码器→潜空间(连续向量)→解码器+KL散度。核心价值：<b>在连续的潜空间中操作分子</b>——两个药物分子之间的线性插值=化学空间的平滑过渡。</p>
+
+<h2>Day 3：GAN分子优化——对抗训练生成目标分子</h2>
+<p>生成器(造假分子) vs 判别器(分辨真假+性质是否达标)互相对抗。条件GAN：给定"高溶解度+低毒性"目标→生成满足条件的分子。</p>
+<p><b>最大挑战：模式坍塌</b>——生成器只生成少数几种分子。解决：WGAN-GP / mini-batch discrimination。</p>
+
+<h2>Day 4：强化学习分子优化</h2>
+<p>Agent对分子做小修改(加/删/改原子或键)→Environment评估性质→Reward(性质改善=正奖励)。</p>
+<p><b>REINVENT框架</b>：预训练生成模型作为"先验"+RL微调偏向目标性质+惩罚项防止偏离太远=目前最实用的分子优化方法。</p>
+
+<h2>Day 5：可合成性 + 类药性过滤</h2>
+<p>生成的分子要"能做出来"才有意义：</p>
+<ul><li><b>SA Score</b>：1=容易合成，10=极难合成</li><li><b>QED</b>：类药性综合评价0-1</li><li><b>Lipinski五规则</b>：MW<500/LogP<5/HBD<5/HBA<10</li></ul>
+<p><b>完整过滤流程</b>：有效性→类药性(QED>0.3)→可合成性(SA<6)→新颖性(不在训练集中)→目标性质达标</p>
+
+<h2>Day 6：分子生成评估体系——MOSES基准</h2>
+<p>五大指标：<b>Validity</b>(合法率)/<b>Uniqueness</b>(去重率)/<b>Novelty</b>(新颖性)/<b>Diversity</b>(多样性)/<b>目标性质分布</b>。</p>
+
+<h2>Day 7：🔄 LSTM vs VAE vs GAN 完整对比实验</h2>
+<p>3种方法同数据集→统一评估标准→分析每种方法的优劣和适用场景。</p>
+
+<div style="margin-top:40px;padding-top:20px;border-top:1px solid #30363d;text-align:center;color:#8b949e">
+  <p>🏁 第7周（分子生成）完成</p>
+</div>
+</body></html>

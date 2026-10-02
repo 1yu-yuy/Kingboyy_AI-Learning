@@ -1,0 +1,109 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>第6周·详细教程</title>
+<style>body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;background:#0d1117;color:#e6edf3;max-width:900px;margin:0 auto;padding:20px;line-height:1.8}h1{color:#2dd4bf;border-bottom:2px solid #30363d;padding-bottom:10px}h2{color:#a78bfa;margin-top:36px}h3{color:#60a5fa}.step{background:#161b22;border:1px solid #30363d;border-radius:10px;padding:16px 20px;margin:12px 0}.step h4{color:#2dd4bf;margin:0 0 8px}.step p,.step li{margin:6px 0;color:#8b949e;font-size:.9rem}pre{background:#0a0e15;border:1px solid #30363d;border-radius:8px;padding:12px 16px;overflow-x:auto;font-size:.82rem;line-height:1.6}code{font-family:"Cascadia Code","Fira Code",monospace;font-size:.82rem}.c1{color:#2dd4bf}.c2{color:#6a9955}.c3{color:#fbbf24}.note{background:rgba(251,191,36,.1);border-left:3px solid #fbbf24;padding:10px 14px;margin:10px 0;border-radius:0 8px 8px 0;font-size:.85rem}.check{background:rgba(74,222,128,.08);border-left:3px solid #4ade80;padding:10px 14px;margin:10px 0;border-radius:0 8px 8px 0;font-size:.85rem}</style></head><body>
+<h1>🕸️ 第6周：图神经网络(GNN)——分子的天然语言</h1>
+<p style="color:#8b949e">⏱️ 每天 1.5-2小时 · 共 7 天</p>
+<p style="color:#8b949e">🎯 本周目标：掌握 GCN/GAT/MPNN/SchNet，因为分子=图→GNN天然适合</p>
+
+<h2>Day 1：图论基础 + 分子→图表示</h2>
+<p style="color:#8b949e">⏱️ 1.5小时 · 🎯 能把任何SMILES转成PyG图数据对象</p>
+
+<div class="step"><h4>理解图的基本概念</h4>
+<ul><li><b>节点(Node/Vertex)</b>：图中的点。分子中=原子</li><li><b>边(Edge)</b>：连接两个节点的线。分子中=化学键</li><li><b>邻接矩阵</b>：N×N矩阵，A[i][j]=1表示节点i和j之间有边</li><li><b>节点特征</b>：每个节点的属性向量。原子特征=原子序数/杂化状态/手性/电荷/芳香性/氢原子数</li><li><b>边特征</b>：每条边的属性向量。键特征=键类型(单/双/三/芳香)/共轭/环内</li></ul>
+</div>
+
+<div class="step"><h4>安装 PyG（PyTorch Geometric）</h4>
+<pre><code><span class="c2"># 去 pyg.org → Install 页面，选PyTorch版本+CUDA版本→生成命令</span>
+<span class="c2"># 例如 PyTorch 2.0 + CPU:</span>
+<span class="c1">pip install torch_geometric</span></code></pre>
+</div>
+
+<div class="step"><h4>RDKit→PyG Data 转换函数（今天最重要的代码）</h4>
+<pre><code><span class="c1">import</span> torch; <span class="c1">from</span> torch_geometric.data <span class="c1">import</span> Data
+<span class="c1">from</span> rdkit <span class="c1">import</span> Chem
+
+<span class="c1">def</span> <span class="c4">smiles_to_pyg_data</span>(smiles):
+    mol = Chem.MolFromSmiles(smiles)
+    <span class="c1">if</span> mol <span class="c1">is</span> <span class="c1">None</span>: <span class="c1">return</span> <span class="c1">None</span>
+
+    <span class="c2"># 节点特征：每个原子的属性</span>
+    atom_features = []
+    <span class="c1">for</span> atom <span class="c1">in</span> mol.GetAtoms():
+        feats = [
+            atom.GetAtomicNum(),           <span class="c2"># 原子序数</span>
+            atom.GetDegree(),              <span class="c2"># 连接数</span>
+            atom.GetFormalCharge(),        <span class="c2"># 形式电荷</span>
+            <span class="c1">int</span>(atom.GetHybridization()),    <span class="c2"># 杂化状态</span>
+            <span class="c1">int</span>(atom.GetIsAromatic()),       <span class="c2"># 芳香性</span>
+            atom.GetTotalNumHs(),          <span class="c2"># 氢原子数</span>
+        ]
+        atom_features.append(feats)
+
+    <span class="c2"># 边索引（连接关系）</span>
+    edge_index = []
+    edge_attr = []
+    <span class="c1">for</span> bond <span class="c1">in</span> mol.GetBonds():
+        i, j = bond.GetBeginAtomIdx(), bond.GetEndAtomIdx()
+        edge_index.append([i, j]); edge_index.append([j, i])  <span class="c2"># 无向图=双向边</span>
+        bt = bond.GetBondTypeAsDouble()
+        edge_attr.extend([[bt], [bt]])
+
+    x = torch.tensor(atom_features, dtype=torch.float)
+    ei = torch.tensor(edge_index, dtype=torch.long).t().contiguous()
+    ea = torch.tensor(edge_attr, dtype=torch.float)
+
+    <span class="c1">return</span> Data(x=x, edge_index=ei, edge_attr=ea)</code></pre>
+</div>
+<div class="check">✅ 给SMILES→输出PyG Data(含x节点特征+edge_index边索引+edge_attr边特征)</div>
+
+<h2>Day 2：消息传递范式 + GCN</h2>
+<p style="color:#8b949e">⏱️ 1.5小时 · 🎯 理解消息传递三步骤，跑通第一个GCN</p>
+
+<div class="step"><h4>消息传递三步骤</h4>
+<ol><li><b>消息(Message)</b>：每个邻居发一条消息(通常是邻居特征×权重)</li><li><b>聚合(Aggregate)</b>：汇总所有邻居消息(mean/sum/max)</li><li><b>更新(Update)</b>：用汇总消息更新当前节点表示</li></ol>
+<p><b>GCN的本质：</b>我的新特征 = 我自己的特征 + 所有邻居特征的加权平均。多层堆叠=信息在图中传播越来越远。</p>
+</div>
+
+<div class="step"><h4>第一个GCN模型</h4>
+<pre><code><span class="c1">from</span> torch_geometric.nn <span class="c1">import</span> GCNConv
+<span class="c1">class</span> <span class="c4">MolGCN</span>(nn.Module):
+    <span class="c1">def</span> <span class="c4">__init__</span>(<span class="c4">self</span>, in_dim, hidden=128):
+        <span class="c4">super</span>().__init__()
+        <span class="c4">self</span>.conv1 = GCNConv(in_dim, hidden)
+        <span class="c4">self</span>.conv2 = GCNConv(hidden, hidden)
+        <span class="c4">self</span>.fc = nn.Linear(hidden, 1)
+    <span class="c1">def</span> <span class="c4">forward</span>(<span class="c4">self</span>, data):
+        x, ei = data.x, data.edge_index
+        x = torch.relu(<span class="c4">self</span>.conv1(x, ei))
+        x = torch.relu(<span class="c4">self</span>.conv2(x, ei))
+        x = x.mean(dim=0, keepdim=<span class="c1">True</span>)  <span class="c2"># 全局池化→图级别表示</span>
+        <span class="c1">return</span> <span class="c4">self</span>.fc(x)</code></pre>
+</div>
+
+<h2>Day 3：GAT（图注意力网络）</h2>
+<p>GAT 给不同邻居分配不同权重（通过注意力机制学习）→不仅更准，<b>注意力权重可以解释"哪个原子最重要"</b>。</p>
+<pre><code><span class="c1">from</span> torch_geometric.nn <span class="c1">import</span> GATConv
+<span class="c2"># 用法几乎和GCNConv一样，但引入了注意力</span>
+conv = GATConv(in_dim, hidden, heads=4)  <span class="c2"># 多头注意力</span></code></pre>
+
+<h2>Day 4：MPNN——分子性质预测的标准框架</h2>
+<p>MPNN 把消息传递和读出分成两个阶段。核心区别在<b>读出(Readout)</b>：</p>
+<ul><li><b>sum</b>：保留总量信息（分子量相关的性质）</li><li><b>mean</b>：对图大小不敏感</li><li><b>max</b>：保留最强信号</li><li><b>set2set</b>：注意力加权汇总（最灵活，通常最好）</li></ul>
+
+<h2>Day 5：3D GNN——不只图拓扑，还有空间信息</h2>
+<p>分子的3D构象对性质有巨大影响。SchNet不用图的邻接关系，而是<b>用原子间的3D距离</b>做消息传递。</p>
+<pre><code><span class="c2"># RDKit生成3D构象</span>
+mol = Chem.AddHs(mol); AllChem.EmbedMolecule(mol, randomSeed=42)
+AllChem.MMFFOptimizeMolecule(mol)
+conf = mol.GetConformer()
+coords = conf.GetPositions()  <span class="c2"># 每个原子的(x,y,z)坐标</span></code></pre>
+
+<h2>Day 6：GNN综合对比实验——RF vs GCN vs GAT vs MPNN</h2>
+<p>同一数据集、同样数据划分、统一评估。t-SNE可视化GNN学到的分子嵌入空间。GNNExplainer分析重要的原子/键。</p>
+
+<h2>Day 7：🔄 GNN项目整理</h2>
+<p>整理代码为标准项目结构。写一份"GNN分子建模入门指南"。GitHub更新。</p>
+
+<div style="margin-top:40px;padding-top:20px;border-top:1px solid #30363d;text-align:center;color:#8b949e">
+  <p>🏁 第6周（图神经网络）完成</p>
+</div>
+</body></html>
